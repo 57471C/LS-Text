@@ -16,7 +16,7 @@ export function TerminalPanel() {
   const [history, setHistory] = useState<string[]>([]);
   const [histIdx, setHistIdx] = useState(-1);
   const [lines, setLines] = useState<Line[]>([
-    { kind: "sys", text: "LS-Text integrated shell  ·  bound to the workspace" },
+    { kind: "sys", text: "LS.Text integrated shell  ·  bound to the workspace" },
     {
       kind: "sys",
       text: "Native build launches Ghostty / Windows Terminal. Type help for commands.",
