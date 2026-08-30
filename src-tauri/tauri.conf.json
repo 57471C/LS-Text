@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "LS-Text",
+  "productName": "LS.Text",
   "version": "0.1.0",
-  "identifier": "com.static.lstext",
+  "identifier": "com.leanstudio.lstext",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:8080",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "LS-Text",
+        "title": "LS.Text",
         "width": 1280,
         "height": 800,
         "minWidth": 720,
@@ -36,7 +36,7 @@
       "icons/icon.png"
     ],
     "category": "DeveloperTool",
-    "shortDescription": "Lightweight scratchpad micro-IDE",
-    "longDescription": "A blisteringly fast scratchpad editor with CodeMirror 6 and a native terminal launcher."
+    "shortDescription": "Fast scratchpad editor from Lean.Studio",
+    "longDescription": "LS.Text is a local-first scratchpad and micro-editor. Instant boot, CodeMirror 6, optional folder tree and terminal launcher. Open source (MIT) supporting tool in the Lean.Studio suite."
   }
 }
