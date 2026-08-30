@@ -9,6 +9,8 @@
     "dialog:default",
     "store:default",
     "shell:allow-open",
+    "updater:default",
+    "process:allow-restart",
     {
       "identifier": "fs:default",
       "allow": [
