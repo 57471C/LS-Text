@@ -1,8 +1,11 @@
-# LS-Text
+# LS.Text
 
-A blisteringly fast scratchpad editor and micro-IDE. Instant boot, CodeMirror 6, lazy file tree, markdown preview with outline, and a Ghostty-first terminal launcher.
+Fast local scratchpad from [Lean.Studio](https://lean.studio). Instant boot, CodeMirror 6, lazy file tree, markdown preview, Ghostty-first terminal launcher.
 
-**Identifier:** `com.static.lstext`
+**Not** the process suite (TimeStudy / Mapper / Stats). It is the open-source notepad you open when you do not want a dump in the IDE or the OS editor.
+
+- Identifier: `com.leanstudio.lstext`
+- License: MIT
 
 ## Desktop (Tauri v2)
 
@@ -22,6 +25,8 @@ npm run tauri:build
 Artifacts land in `src-tauri/target/release/bundle/` (`.dmg` / `.msi` / `.AppImage`).
 
 Open Folder talks to the real disk. The chevron launches **Ghostty** if it is on `PATH`, otherwise Alacritty, Kitty, Terminal.app, Windows Terminal, or PowerShell.
+
+Untitled buffers are scratch. Use **Save As** before they become a path under a project folder.
 
 ## Browser
 
