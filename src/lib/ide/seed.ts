@@ -1,6 +1,6 @@
 import type { VirtualSnapshot } from "./types";
 
-const README = `# LS-Text
+const README = `# LS.Text
 
 A blisteringly fast scratchpad. Type immediately — this buffer and the
 files in the tree live in your browser until you open a real folder.
@@ -53,7 +53,7 @@ fallback in the active directory.
 
 \`\`\`rust
 fn main() {
-    let name = "LS-Text";
+    let name = "LS.Text";
     println!("{name} is ready.");
 }
 \`\`\`
@@ -68,7 +68,7 @@ buffer: search, fold, indent, done.
 `;
 
 const HELLO_RS = `fn main() {
-    let name = "LS-Text";
+    let name = "LS.Text";
     println!("{name} is ready.");
     println!("scratch → script → ship");
 }
@@ -103,7 +103,7 @@ export function boot(buffers: Buffer[]) {
   return [scratch, ...buffers];
 }
 
-console.log("LS-Text · cold boot", boot([]));
+console.log("LS.Text · cold boot", boot([]));
 `;
 
 const SCRIPT_PY = `from pathlib import Path
@@ -139,14 +139,14 @@ editor:
 `;
 
 const NOTES_JSON = `{
-  "name": "LS-Text",
+  "name": "LS.Text",
   "kind": "scratchpad",
   "buffers": ["untitled-1"]
 }
 `;
 
 const DOTENV = `# Local scratch secrets — do not commit
-export APP_NAME=LS-Text
+export APP_NAME=LS.Text
 PORT=8080
 THEME="dark-modern"
 DATABASE_URL=postgres://localhost/scratch
@@ -161,7 +161,7 @@ dist/
 `;
 const RUN_SH = `#!/usr/bin/env bash
 set -euo pipefail
-echo "LS-Text scratchpad"
+echo "LS.Text scratchpad"
 ls -1
 `;
 
@@ -169,12 +169,12 @@ const INDEX_HTML = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>LS-Text</title>
+    <title>LS.Text</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <main>
-      <h1>LS-Text</h1>
+      <h1>LS.Text</h1>
       <p>Scratch fast. Ship when it is real.</p>
     </main>
   </body>

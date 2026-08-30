@@ -47,7 +47,7 @@ export async function runShell(
           cwd: state.cwd,
           lines: [
             "ls  cd  pwd  cat  echo  mkdir  touch  rm  mv  tree  clear  date  whoami  uname  ghostty  help",
-            "This shell is bound to the workspace. Native LS-Text launches Ghostty / Windows Terminal.",
+            "This shell is bound to the workspace. Native LS.Text launches Ghostty / Windows Terminal.",
           ],
         };
       case "clear":
@@ -59,7 +59,7 @@ export async function runShell(
       case "date":
         return { cwd: state.cwd, lines: [new Date().toString()] };
       case "uname":
-        return { cwd: state.cwd, lines: ["LS-Text scratchpad"] };
+        return { cwd: state.cwd, lines: ["LS.Text scratchpad"] };
       case "echo":
         return { cwd: state.cwd, lines: [arg] };
       case "cd": {
