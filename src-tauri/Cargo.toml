@@ -1,8 +1,9 @@
 [package]
 name = "ls-text"
 version = "0.1.0"
-description = "LS-Text — lightweight native scratchpad IDE"
-authors = ["LS-Text"]
+description = "LS.Text — fast local scratchpad from Lean.Studio"
+authors = ["Lean.Studio"]
+license = "MIT"
 edition = "2021"
 rust-version = "1.77"
 
