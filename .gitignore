@@ -1,0 +1,16 @@
+node_modules
+dist
+.vercel
+.output
+.nitro
+.turbo
+src-tauri/target
+src-tauri/gen
+*.log
+.DS_Store
+artifacts
+screenshots
+attachments
+.env
+.env.*
+!.env.example

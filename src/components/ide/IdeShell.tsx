@@ -1,0 +1,232 @@
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { isDirty, useIde } from "@/lib/ide/store";
+import { ActivityBar } from "./ActivityBar";
+import { CommandPalette } from "./CommandPalette";
+import { DragHandle } from "./DragHandle";
+import { EditorPane } from "./EditorPane";
+import { FileTree } from "./FileTree";
+import { PromptDialog } from "./PromptDialog";
+import { SearchPanel } from "./SearchPanel";
+import { SettingsPanel } from "./SettingsPanel";
+import { StatusBar } from "./StatusBar";
+import { TabBar } from "./TabBar";
+import { TerminalPanel } from "./TerminalPanel";
+
+export function IdeShell() {
+  const explorerOpen = useIde((s) => s.explorerOpen);
+  const terminalOpen = useIde((s) => s.terminalOpen);
+  const zenMode = useIde((s) => s.zenMode);
+  const zenName = useIde(
+    (s) => s.tabs.find((t) => t.id === s.activeTabId)?.name ?? "",
+  );
+  const [explorerWidth, setExplorerWidth] = useState(240);
+  const [terminalHeight, setTerminalHeight] = useState(200);
+  const [dropHover, setDropHover] = useState(false);
+  const chordK = useRef(false);
+  const dragDepth = useRef(0);
+
+  useLayoutEffect(() => {
+    useIde.getState().hydrate();
+  }, []);
+
+  useEffect(() => {
+    const onUnload = (e: BeforeUnloadEvent) => {
+      if (!useIde.getState().tabs.some(isDirty)) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const s = useIde.getState();
+        if (s.searchOpen) s.toggleSearch(false);
+        else if (s.paletteOpen) s.togglePalette(false);
+        else if (s.settingsOpen) s.toggleSettings();
+        else if (s.prompt) s.closePrompt();
+        else if (s.zenMode) s.toggleZen();
+        return;
+      }
+      if (e.key === "F11") {
+        e.preventDefault();
+        useIde.getState().toggleZen();
+        return;
+      }
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+
+      if (k === "k" && !e.shiftKey) {
+        e.preventDefault();
+        chordK.current = true;
+        window.setTimeout(() => {
+          chordK.current = false;
+        }, 800);
+        return;
+      }
+      if (chordK.current && k === "z") {
+        e.preventDefault();
+        chordK.current = false;
+        useIde.getState().toggleZen();
+        return;
+      }
+      chordK.current = false;
+
+      if (k === "s" && !e.shiftKey) {
+        e.preventDefault();
+        void useIde.getState().saveTab();
+      } else if (k === "w") {
+        e.preventDefault();
+        if (!useIde.getState().prompt) useIde.getState().closeActive();
+      } else if (k === "p" && !e.shiftKey) {
+        e.preventDefault();
+        useIde.getState().togglePalette();
+      } else if (k === "o") {
+        e.preventDefault();
+        void useIde.getState().openFolder();
+      } else if (k === "n") {
+        e.preventDefault();
+        useIde.getState().newScratch();
+      } else if (k === "b") {
+        e.preventDefault();
+        useIde.getState().toggleExplorer();
+      } else if (k === "`") {
+        e.preventDefault();
+        void useIde.getState().launchTerminal();
+      } else if (k === ",") {
+        e.preventDefault();
+        useIde.getState().toggleSettings();
+      } else if (k === "v" && e.shiftKey) {
+        e.preventDefault();
+        useIde.getState().togglePreview();
+      } else if (k === "f" && e.shiftKey) {
+        e.preventDefault();
+        useIde.getState().toggleSearch();
+      } else if (k === "t" && e.shiftKey) {
+        e.preventDefault();
+        useIde.getState().reopenClosedTab();
+      } else if (k === "=" || k === "+" || e.code === "NumpadAdd") {
+        e.preventDefault();
+        useIde.getState().bumpFont(1);
+      } else if (k === "-" || e.code === "NumpadSubtract") {
+        e.preventDefault();
+        useIde.getState().bumpFont(-1);
+      } else if (k === "0" && !e.shiftKey) {
+        e.preventDefault();
+        useIde.getState().resetFont();
+      } else if (k === "g" && !e.shiftKey) {
+        e.preventDefault();
+        useIde.getState().openGoto();
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
+  }, []);
+
+  const showExplorer = explorerOpen && !zenMode;
+  const showTerminal = terminalOpen && !zenMode;
+
+  return (
+    <div
+      className="relative flex h-dvh min-h-0 flex-col overflow-hidden bg-bg text-fg md:flex-row"
+      onDragEnter={(e) => {
+        e.preventDefault();
+        dragDepth.current += 1;
+        if (e.dataTransfer.types.includes("Files")) setDropHover(true);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDropHover(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        dragDepth.current = 0;
+        setDropHover(false);
+        void useIde.getState().ingestDrop(e.dataTransfer);
+      }}
+    >
+      {!zenMode && <ActivityBar />}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1">
+            {showExplorer && (
+              <>
+                <div
+                  className="hidden min-h-0 shrink-0 md:block"
+                  style={{ width: explorerWidth }}
+                >
+                  <FileTree />
+                </div>
+                <DragHandle
+                  axis="x"
+                  onDrag={(delta) =>
+                    setExplorerWidth((w) => Math.min(420, Math.max(160, w + delta)))
+                  }
+                  className="hidden md:block"
+                />
+              </>
+            )}
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+              {showExplorer && (
+                <div className="absolute inset-0 z-20 border-b border-border md:hidden">
+                  <FileTree />
+                </div>
+              )}
+              {!zenMode && <TabBar />}
+              {zenMode && (
+                <div className="flex h-8 shrink-0 items-center justify-between border-b border-border px-3">
+                  <span className="truncate text-[11px] uppercase tracking-[0.08em] text-subtle">
+                    Zen{zenName ? ` · ${zenName}` : ""}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-[11px] text-muted hover:text-fg"
+                    onClick={() => useIde.getState().toggleZen()}
+                  >
+                    Exit
+                  </button>
+                </div>
+              )}
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                  <EditorPane />
+                </div>
+                {showTerminal && (
+                  <>
+                    <DragHandle
+                      axis="y"
+                      onDrag={(delta) =>
+                        setTerminalHeight((h) => Math.min(420, Math.max(120, h - delta)))
+                      }
+                    />
+                    <div className="min-h-0 shrink-0" style={{ height: terminalHeight }}>
+                      <TerminalPanel />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        <StatusBar />
+      </div>
+      <CommandPalette />
+      <SearchPanel />
+      <SettingsPanel />
+      <PromptDialog />
+      {dropHover && (
+        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-bg/70">
+          <p className="rounded-xl border border-accent bg-elevated px-6 py-4 text-sm text-fg shadow-(--shadow-float)">
+            Drop files or a folder to open
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
