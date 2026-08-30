@@ -2,7 +2,8 @@
   "name": "ls-text",
   "private": true,
   "version": "0.1.0",
-  "description": "LS-Text — lightweight scratchpad micro-IDE",
+  "license": "MIT",
+  "description": "LS.Text — fast local scratchpad editor from Lean.Studio",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 8080",
