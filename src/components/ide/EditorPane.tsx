@@ -33,6 +33,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { DragHandle } from "./DragHandle";
 import { MarkdownPreview } from "./MarkdownPreview";
+import { bindEditorView } from "@/lib/ide/base64";
 import { loadLanguage } from "@/lib/ide/languages";
 import { isMarkdownName } from "@/lib/ide/markdown";
 import { bindMarkdownScroll, scrollPreviewToLine } from "@/lib/ide/scroll-sync";
@@ -156,7 +157,9 @@ export function EditorPane() {
       }),
     });
     viewRef.current = view;
+    bindEditorView(view);
     return () => {
+      bindEditorView(null);
       view.destroy();
       viewRef.current = null;
       statesRef.current.clear();
