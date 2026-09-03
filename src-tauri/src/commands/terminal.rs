@@ -135,6 +135,26 @@ fn open_unix(dir: &Path, macos: bool) -> Result<String, String> {
     }
 
     if macos {
+        for app in ["Ghostty", "Alacritty", "Kitty"] {
+            let mut probe = Command::new("open");
+            probe.arg("-Ra").arg(app);
+            if probe
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false)
+            {
+                let mut cmd = Command::new("open");
+                cmd.arg("-na")
+                    .arg(app)
+                    .arg("--args")
+                    .arg("--working-directory")
+                    .arg(&dir_s);
+                spawn_detached(cmd)?;
+                return Ok(format!("{app}:{dir_s}"));
+            }
+        }
         let mut cmd = Command::new("open");
         cmd.arg("-a").arg("Terminal").arg(&dir_s);
         spawn_detached(cmd)?;
