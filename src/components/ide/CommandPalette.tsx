@@ -1,5 +1,6 @@
 import { Command } from "cmdk";
 import { useEffect, useState } from "react";
+import { toggleBase64InEditor } from "@/lib/ide/base64";
 import { useIde } from "@/lib/ide/store";
 import { basename, modLabel } from "@/lib/utils";
 
@@ -33,18 +34,18 @@ export function CommandPalette() {
     { id: "new", label: "New scratch buffer", hint: `${mod}+N`, run: () => useIde.getState().newScratch() },
     { id: "open", label: "Open folder", hint: `${mod}+O`, run: () => void useIde.getState().openFolder() },
     { id: "save", label: "Save file", hint: `${mod}+S`, run: () => void useIde.getState().saveTab() },
-    { id: "term", label: "Toggle terminal", hint: `${mod}+\``, run: () => void useIde.getState().launchTerminal() },
+    { id: "term", label: "Open external terminal", hint: `${mod}+\``, run: () => void useIde.getState().launchTerminal() },
     { id: "explorer", label: "Toggle explorer", hint: `${mod}+B`, run: () => useIde.getState().toggleExplorer() },
     { id: "goto", label: "Go to line", hint: `${mod}+G`, run: () => useIde.getState().openGoto() },
     { id: "search", label: "Search workspace", hint: `${mod}+Shift+F`, run: () => useIde.getState().toggleSearch(true) },
     { id: "reopen", label: "Reopen closed tab", hint: `${mod}+Shift+T`, run: () => useIde.getState().reopenClosedTab() },
-    { id: "zen", label: "Toggle zen mode", hint: `${mod}+K Z`, run: () => useIde.getState().toggleZen() },
+    { id: "b64", label: "Toggle Base64", hint: `${mod}+Shift+B`, run: () => toggleBase64InEditor() },
     { id: "font-up", label: "Larger text", hint: `${mod}+=`, run: () => useIde.getState().bumpFont(1) },
     { id: "font-down", label: "Smaller text", hint: `${mod}+-`, run: () => useIde.getState().bumpFont(-1) },
     { id: "font-reset", label: "Reset text size", hint: `${mod}+0`, run: () => useIde.getState().resetFont() },
     { id: "preview", label: "Toggle markdown preview", hint: `${mod}+Shift+V`, run: () => useIde.getState().togglePreview() },
     { id: "settings", label: "Open settings", hint: `${mod}+,`, run: () => useIde.getState().toggleSettings() },
-    { id: "reset", label: "Restore sample workspace", hint: "", run: () => void useIde.getState().resetWorkspace() },
+    { id: "reset", label: "Reset workspace", hint: "", run: () => void useIde.getState().resetWorkspace() },
   ];
 
   return (
