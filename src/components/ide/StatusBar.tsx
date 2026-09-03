@@ -1,3 +1,4 @@
+import { toggleBase64InEditor } from "@/lib/ide/base64";
 import { useIde } from "@/lib/ide/store";
 import { FONT_MAX, FONT_MIN, isDirty } from "@/lib/ide/store";
 import { modLabel } from "@/lib/utils";
@@ -10,7 +11,6 @@ export function StatusBar() {
   const kind = useIde((s) => s.fs.kind);
   const previewOpen = useIde((s) => s.previewOpen);
   const fontSize = useIde((s) => s.settings.fontSize);
-  const zenMode = useIde((s) => s.zenMode);
   const counts = useIde((s) => s.counts);
   const mod = modLabel();
 
@@ -21,18 +21,7 @@ export function StatusBar() {
           {workspace}
           <span className="text-subtle"> · {kind === "native" ? "disk" : "scratchpad"}</span>
         </span>
-        {zenMode ? (
-          <button
-            type="button"
-            className="text-fg hover:text-accent"
-            onClick={() => useIde.getState().toggleZen()}
-            title="Exit zen  Esc"
-          >
-            Zen · Esc
-          </button>
-        ) : (
-          <span className="hidden truncate sm:inline">{status}</span>
-        )}
+        <span className="hidden truncate sm:inline">{status}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3 tabular-nums">
         {tab && (
@@ -83,6 +72,14 @@ export function StatusBar() {
                 +
               </button>
             </span>
+            <button
+              type="button"
+              className="hover:text-fg"
+              title={`Toggle Base64  ${mod}+Shift+B`}
+              onClick={() => toggleBase64InEditor()}
+            >
+              Base64
+            </button>
             <span>UTF-8</span>
           </>
         )}
