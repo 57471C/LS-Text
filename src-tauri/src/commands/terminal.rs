@@ -104,7 +104,6 @@ fn libc_setsid() {
 
 #[cfg(unix)]
 unsafe fn libc_syscall_setsid() {
-    // Avoid a libc crate dep: call setsid via the libc symbol if linked by std.
     extern "C" {
         fn setsid() -> i32;
     }
@@ -117,13 +116,13 @@ fn open_unix(dir: &Path, macos: bool) -> Result<String, String> {
 
     if on_path("ghostty") {
         let mut cmd = Command::new("ghostty");
-        cmd.arg("--working-directory").arg(&dir_s);
+        cmd.arg(format!("--working-directory={dir_s}"));
         spawn_detached(cmd)?;
         return Ok(format!("ghostty:{dir_s}"));
     }
     if on_path("alacritty") {
         let mut cmd = Command::new("alacritty");
-        cmd.arg("--working-directory").arg(&dir_s);
+        cmd.arg(format!("--working-directory={dir_s}"));
         spawn_detached(cmd)?;
         return Ok(format!("alacritty:{dir_s}"));
     }
@@ -149,8 +148,7 @@ fn open_unix(dir: &Path, macos: bool) -> Result<String, String> {
                 cmd.arg("-na")
                     .arg(app)
                     .arg("--args")
-                    .arg("--working-directory")
-                    .arg(&dir_s);
+                    .arg(format!("--working-directory={dir_s}"));
                 spawn_detached(cmd)?;
                 return Ok(format!("{app}:{dir_s}"));
             }
@@ -164,9 +162,7 @@ fn open_unix(dir: &Path, macos: bool) -> Result<String, String> {
     for candidate in ["x-terminal-emulator", "sensible-terminal", "gnome-terminal", "konsole", "xfce4-terminal"] {
         if on_path(candidate) {
             let mut cmd = Command::new(candidate);
-            if candidate == "gnome-terminal" {
-                cmd.arg("--working-directory").arg(&dir_s);
-            } else if candidate == "konsole" || candidate == "xfce4-terminal" {
+            if candidate == "gnome-terminal" || candidate == "konsole" || candidate == "xfce4-terminal" {
                 cmd.arg("--working-directory").arg(&dir_s);
             }
             spawn_detached(cmd)?;
@@ -183,7 +179,7 @@ fn open_windows(dir: &Path) -> Result<String, String> {
 
     if on_path("ghostty.exe") || on_path("ghostty") {
         let mut cmd = Command::new("ghostty");
-        cmd.arg("--working-directory").arg(&dir_s);
+        cmd.arg(format!("--working-directory={dir_s}"));
         spawn_detached(cmd)?;
         return Ok(format!("ghostty:{dir_s}"));
     }
