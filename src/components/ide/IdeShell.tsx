@@ -10,17 +10,14 @@ import { SearchPanel } from "./SearchPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { StatusBar } from "./StatusBar";
 import { TabBar } from "./TabBar";
-import { TerminalPanel } from "./TerminalPanel";
 
 export function IdeShell() {
   const explorerOpen = useIde((s) => s.explorerOpen);
-  const terminalOpen = useIde((s) => s.terminalOpen);
   const zenMode = useIde((s) => s.zenMode);
   const zenName = useIde(
     (s) => s.tabs.find((t) => t.id === s.activeTabId)?.name ?? "",
   );
   const [explorerWidth, setExplorerWidth] = useState(240);
-  const [terminalHeight, setTerminalHeight] = useState(200);
   const [dropHover, setDropHover] = useState(false);
   const chordK = useRef(false);
   const dragDepth = useRef(0);
@@ -127,7 +124,6 @@ export function IdeShell() {
   }, []);
 
   const showExplorer = explorerOpen && !zenMode;
-  const showTerminal = terminalOpen && !zenMode;
 
   return (
     <div
@@ -195,22 +191,7 @@ export function IdeShell() {
                 </div>
               )}
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                  <EditorPane />
-                </div>
-                {showTerminal && (
-                  <>
-                    <DragHandle
-                      axis="y"
-                      onDrag={(delta) =>
-                        setTerminalHeight((h) => Math.min(420, Math.max(120, h - delta)))
-                      }
-                    />
-                    <div className="min-h-0 shrink-0" style={{ height: terminalHeight }}>
-                      <TerminalPanel />
-                    </div>
-                  </>
-                )}
+                <EditorPane />
               </div>
             </div>
           </div>
