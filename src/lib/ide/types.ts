@@ -84,15 +84,16 @@ export interface VirtualSnapshot {
 }
 
 export interface SessionDump {
-  version: 1;
-  tabs: Tab[];
-  activeTabId: string | null;
-  expandedDirs: string[];
+  version: 1 | 2;
+  /** Ignored on load — cold start is always a fresh untitled buffer. */
+  tabs?: Tab[];
+  activeTabId?: string | null;
+  expandedDirs?: string[];
   explorerOpen: boolean;
-  terminalOpen: boolean;
+  terminalOpen?: boolean;
   previewOpen?: boolean;
   settings: EditorSettings;
-  terminalCwd: string;
+  terminalCwd?: string;
   virtual?: VirtualSnapshot;
   workspaceKind: FsKind;
   workspaceName: string;

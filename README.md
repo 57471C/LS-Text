@@ -24,9 +24,9 @@ npm run tauri:build
 
 Artifacts land in `src-tauri/target/release/bundle/` (`.dmg` / `.msi` / `.AppImage`).
 
-Open Folder talks to the real disk. The chevron launches **Ghostty** if it is on `PATH`, otherwise Alacritty, Kitty, Terminal.app, Windows Terminal, or PowerShell.
+Open Folder talks to the real disk. Last opened folder is remembered; buffers are not. The launcher prefers **Ghostty**, then Alacritty, Kitty, Terminal.app, Windows Terminal, or PowerShell.
 
-Untitled buffers are scratch. Use **Save As** before they become a path under a project folder.
+Untitled buffers are scratch. Use **Save As** before they become a path under a project folder. Quit is blocked while a buffer is dirty.
 
 ## Browser
 
@@ -51,7 +51,6 @@ The browser build is a virtual scratchpad. Chrome / Edge can open a real folder 
 | Search workspace | Mod+Shift+F |
 | Reopen closed tab | Mod+Shift+T |
 | Go to line | Mod+G |
-| Zen mode | Mod+K then Z, or F11 |
 | Larger / smaller text | Mod+= / Mod+- |
 | Reset text size | Mod+0 |
 | External terminal | Mod+` |

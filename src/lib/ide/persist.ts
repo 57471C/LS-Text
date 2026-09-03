@@ -9,14 +9,14 @@ export async function loadSession(): Promise<SessionDump | null> {
       const { LazyStore } = await import("@tauri-apps/plugin-store");
       const store = new LazyStore("session.json");
       const dump = await store.get<SessionDump>("session");
-      if (dump?.version !== 1) return null;
+      if (dump?.version !== 1 && dump?.version !== 2) return null;
       return dump;
     }
     if (typeof localStorage === "undefined") return null;
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SessionDump;
-    if (parsed?.version !== 1) return null;
+    if (parsed?.version !== 1 && parsed?.version !== 2) return null;
     return parsed;
   } catch {
     return null;
