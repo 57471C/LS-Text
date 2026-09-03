@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { isDirty, useIde } from "@/lib/ide/store";
+import { isTauriRuntime } from "@/lib/ide/tauri";
 import { ActivityBar } from "./ActivityBar";
 import { CommandPalette } from "./CommandPalette";
 import { DragHandle } from "./DragHandle";
@@ -13,13 +14,8 @@ import { TabBar } from "./TabBar";
 
 export function IdeShell() {
   const explorerOpen = useIde((s) => s.explorerOpen);
-  const zenMode = useIde((s) => s.zenMode);
-  const zenName = useIde(
-    (s) => s.tabs.find((t) => t.id === s.activeTabId)?.name ?? "",
-  );
   const [explorerWidth, setExplorerWidth] = useState(240);
   const [dropHover, setDropHover] = useState(false);
-  const chordK = useRef(false);
   const dragDepth = useRef(0);
 
   useLayoutEffect(() => {
@@ -37,6 +33,30 @@ export function IdeShell() {
   }, []);
 
   useEffect(() => {
+    if (!isTauriRuntime()) return;
+    let gone = false;
+    let unlisten: (() => void) | undefined;
+    void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
+      if (gone) return;
+      void getCurrentWindow()
+        .onCloseRequested((event) => {
+          if (!useIde.getState().tabs.some(isDirty)) return;
+          event.preventDefault();
+          const dirty = useIde.getState().tabs.find(isDirty);
+          if (dirty) useIde.getState().closeTab(dirty.id);
+        })
+        .then((fn) => {
+          if (gone) fn();
+          else unlisten = fn;
+        });
+    });
+    return () => {
+      gone = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         const s = useIde.getState();
@@ -44,33 +64,11 @@ export function IdeShell() {
         else if (s.paletteOpen) s.togglePalette(false);
         else if (s.settingsOpen) s.toggleSettings();
         else if (s.prompt) s.closePrompt();
-        else if (s.zenMode) s.toggleZen();
-        return;
-      }
-      if (e.key === "F11") {
-        e.preventDefault();
-        useIde.getState().toggleZen();
         return;
       }
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
       const k = e.key.toLowerCase();
-
-      if (k === "k" && !e.shiftKey) {
-        e.preventDefault();
-        chordK.current = true;
-        window.setTimeout(() => {
-          chordK.current = false;
-        }, 800);
-        return;
-      }
-      if (chordK.current && k === "z") {
-        e.preventDefault();
-        chordK.current = false;
-        useIde.getState().toggleZen();
-        return;
-      }
-      chordK.current = false;
 
       if (k === "s" && !e.shiftKey) {
         e.preventDefault();
@@ -123,7 +121,7 @@ export function IdeShell() {
     return () => window.removeEventListener("keydown", onKey, { capture: true });
   }, []);
 
-  const showExplorer = explorerOpen && !zenMode;
+  const showExplorer = explorerOpen;
 
   return (
     <div
@@ -149,7 +147,7 @@ export function IdeShell() {
         void useIde.getState().ingestDrop(e.dataTransfer);
       }}
     >
-      {!zenMode && <ActivityBar />}
+      <ActivityBar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1">
             {showExplorer && (
@@ -175,21 +173,7 @@ export function IdeShell() {
                   <FileTree />
                 </div>
               )}
-              {!zenMode && <TabBar />}
-              {zenMode && (
-                <div className="flex h-8 shrink-0 items-center justify-between border-b border-border px-3">
-                  <span className="truncate text-[11px] uppercase tracking-[0.08em] text-subtle">
-                    Zen{zenName ? ` · ${zenName}` : ""}
-                  </span>
-                  <button
-                    type="button"
-                    className="text-[11px] text-muted hover:text-fg"
-                    onClick={() => useIde.getState().toggleZen()}
-                  >
-                    Exit
-                  </button>
-                </div>
-              )}
+              <TabBar />
               <div className="flex min-h-0 flex-1 flex-col">
                 <EditorPane />
               </div>
