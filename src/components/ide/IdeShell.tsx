@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { toggleBase64InEditor } from "@/lib/ide/base64";
 import { isDirty, useIde } from "@/lib/ide/store";
 import { isTauriRuntime } from "@/lib/ide/tauri";
 import { ActivityBar } from "./ActivityBar";
@@ -85,6 +86,9 @@ export function IdeShell() {
       } else if (k === "n") {
         e.preventDefault();
         useIde.getState().newScratch();
+      } else if (k === "b" && e.shiftKey) {
+        e.preventDefault();
+        toggleBase64InEditor();
       } else if (k === "b") {
         e.preventDefault();
         useIde.getState().toggleExplorer();
