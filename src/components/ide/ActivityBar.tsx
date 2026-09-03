@@ -1,12 +1,10 @@
 import {
-  ChevronsLeft,
-  ChevronsRight,
   FilePlus,
   FolderOpen,
-  Maximize2,
   PanelLeft,
   Search,
   Settings,
+  SquareTerminal,
 } from "lucide-react";
 import { useIde } from "@/lib/ide/store";
 import { cn, modLabel } from "@/lib/utils";
@@ -18,7 +16,6 @@ const items = [
     shortcut: "B",
     icon: PanelLeft,
     run: (s: ReturnType<typeof useIde.getState>) => s.toggleExplorer(),
-    active: (s: ReturnType<typeof useIde.getState>) => s.explorerOpen,
   },
   {
     id: "search",
@@ -26,7 +23,6 @@ const items = [
     shortcut: "Shift+F",
     icon: Search,
     run: (s: ReturnType<typeof useIde.getState>) => s.toggleSearch(),
-    active: (s: ReturnType<typeof useIde.getState>) => s.searchOpen,
   },
   {
     id: "open",
@@ -46,17 +42,8 @@ const items = [
     id: "terminal",
     label: "External terminal",
     shortcut: "`",
-    icon: ChevronsRight,
+    icon: SquareTerminal,
     run: (s: ReturnType<typeof useIde.getState>) => void s.launchTerminal(),
-    active: (s: ReturnType<typeof useIde.getState>) => s.terminalOpen,
-  },
-  {
-    id: "zen",
-    label: "Zen mode",
-    shortcut: "K Z",
-    icon: Maximize2,
-    run: (s: ReturnType<typeof useIde.getState>) => s.toggleZen(),
-    active: (s: ReturnType<typeof useIde.getState>) => s.zenMode,
   },
   {
     id: "settings",
@@ -64,24 +51,19 @@ const items = [
     shortcut: ",",
     icon: Settings,
     run: (s: ReturnType<typeof useIde.getState>) => s.toggleSettings(),
-    active: (s: ReturnType<typeof useIde.getState>) => s.settingsOpen,
   },
 ] as const;
 
 export function ActivityBar() {
   const explorerOpen = useIde((s) => s.explorerOpen);
-  const terminalOpen = useIde((s) => s.terminalOpen);
   const settingsOpen = useIde((s) => s.settingsOpen);
   const searchOpen = useIde((s) => s.searchOpen);
-  const zenMode = useIde((s) => s.zenMode);
   const mod = modLabel();
 
   const activeOf = (id: string) => {
     if (id === "explorer") return explorerOpen;
-    if (id === "terminal") return terminalOpen;
     if (id === "settings") return settingsOpen;
     if (id === "search") return searchOpen;
-    if (id === "zen") return zenMode;
     return false;
   };
 
@@ -118,15 +100,7 @@ export function ActivityBar() {
             {active && (
               <span className="absolute bg-accent max-md:bottom-1 max-md:left-1/2 max-md:h-0.5 max-md:w-5 max-md:-translate-x-1/2 md:top-1/2 md:left-0 md:h-5 md:w-0.5 md:-translate-y-1/2" />
             )}
-            {item.id === "terminal" ? (
-              terminalOpen ? (
-                <ChevronsLeft className="size-5" strokeWidth={1.6} />
-              ) : (
-                <ChevronsRight className="size-5" strokeWidth={1.6} />
-              )
-            ) : (
-              <Icon className="size-5" strokeWidth={1.6} />
-            )}
+            <Icon className="size-5" strokeWidth={1.6} />
           </button>
         );
       })}

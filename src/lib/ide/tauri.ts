@@ -22,3 +22,9 @@ export async function pickTauriFolder(): Promise<string | null> {
   const selected = await open({ directory: true, multiple: false });
   return typeof selected === "string" ? selected : null;
 }
+
+export async function desktopHomeDir(): Promise<string | null> {
+  if (!isTauriRuntime()) return null;
+  const { homeDir } = await import("@tauri-apps/api/path");
+  return homeDir();
+}
