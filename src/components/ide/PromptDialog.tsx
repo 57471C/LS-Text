@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { forceNativeClose } from "@/lib/ide/quit";
 import { useIde } from "@/lib/ide/store";
 import { basename } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ const COPY: Record<string, { title: string; action: string; danger?: boolean }> 
   delete: { title: "Delete", action: "Delete", danger: true },
   "save-as": { title: "Save as", action: "Save" },
   "close-dirty": { title: "Unsaved changes", action: "Save" },
+  "quit-dirty": { title: "Quit LS.Text", action: "Quit" },
   "goto-line": { title: "Go to line", action: "Go" },
 };
 
@@ -21,13 +23,15 @@ export function PromptDialog() {
 
   useEffect(() => {
     if (!prompt) return;
-    if (prompt.kind === "close-dirty") saveRef.current?.focus();
-    else inputRef.current?.select();
+    if (prompt.kind === "close-dirty" || prompt.kind === "quit-dirty") {
+      saveRef.current?.focus();
+    } else inputRef.current?.select();
   }, [prompt]);
 
   if (!prompt) return null;
   const copy = COPY[prompt.kind] ?? { title: "Confirm", action: "OK" };
   const dirtyName = prompt.value || basename(prompt.path);
+  const quitCount = Math.max(1, Number(prompt.value) || 1);
 
   return (
     <div
@@ -39,6 +43,11 @@ export function PromptDialog() {
         onMouseDown={(e) => e.stopPropagation()}
         onSubmit={(e) => {
           e.preventDefault();
+          if (prompt.kind === "quit-dirty") {
+            useIde.getState().closePrompt();
+            void forceNativeClose();
+            return;
+          }
           if (prompt.kind === "close-dirty") {
             void useIde.getState().saveAndClose();
             return;
@@ -50,6 +59,13 @@ export function PromptDialog() {
         {prompt.kind === "delete" ? (
           <p className="mt-2 text-sm text-muted text-pretty">
             Delete <span className="text-fg">{basename(prompt.path)}</span>? This cannot be undone.
+          </p>
+        ) : prompt.kind === "quit-dirty" ? (
+          <p className="mt-2 text-sm text-muted text-pretty">
+            {quitCount === 1
+              ? "One buffer has unsaved changes."
+              : `${quitCount} buffers have unsaved changes.`}{" "}
+            Quit anyway?
           </p>
         ) : prompt.kind === "close-dirty" ? (
           <p className="mt-2 text-sm text-muted text-pretty">
@@ -84,7 +100,7 @@ export function PromptDialog() {
             ref={saveRef}
             type="submit"
             size="sm"
-            variant={copy.danger ? "danger" : "default"}
+            variant={copy.danger || prompt.kind === "quit-dirty" ? "danger" : "default"}
           >
             {copy.action}
           </Button>
