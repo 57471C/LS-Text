@@ -52,6 +52,7 @@ export type PromptKind =
   | "delete"
   | "save-as"
   | "close-dirty"
+  | "quit-dirty"
   | "goto-line";
 
 export interface PromptState {
