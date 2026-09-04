@@ -18,12 +18,12 @@ fn open_sync(path: Option<String>) -> Result<String, String> {
 
     #[cfg(target_os = "macos")]
     {
-        return open_unix(&target, true);
+        return open_macos(&target);
     }
 
     #[cfg(target_os = "linux")]
     {
-        return open_unix(&target, false);
+        return open_linux(&target);
     }
 
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
@@ -84,6 +84,21 @@ fn try_spawn(bin: &str, args: &[&str]) -> bool {
 }
 
 #[cfg(unix)]
+fn try_unix_path_terms(dir_s: &str) -> Option<String> {
+    let cwd = format!("--working-directory={dir_s}");
+    if try_spawn("ghostty", &[&cwd]) {
+        return Some(format!("ghostty:{dir_s}"));
+    }
+    if try_spawn("alacritty", &[&cwd]) {
+        return Some(format!("alacritty:{dir_s}"));
+    }
+    if try_spawn("kitty", &["--directory", dir_s]) {
+        return Some(format!("kitty:{dir_s}"));
+    }
+    None
+}
+
+#[cfg(unix)]
 fn libc_setsid() {
     unsafe {
         libc_syscall_setsid();
@@ -104,36 +119,33 @@ fn app_exists(name: &str) -> bool {
         || Path::new(&format!("/Applications/{name}.app/Contents/MacOS/{name}")).exists()
 }
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-fn open_unix(dir: &Path, macos: bool) -> Result<String, String> {
+#[cfg(target_os = "macos")]
+fn open_macos(dir: &Path) -> Result<String, String> {
     let dir_s = dir.to_string_lossy().to_string();
+    if let Some(hit) = try_unix_path_terms(&dir_s) {
+        return Ok(hit);
+    }
     let cwd = format!("--working-directory={dir_s}");
-
-    if try_spawn("ghostty", &[&cwd]) {
-        return Ok(format!("ghostty:{dir_s}"));
-    }
-    if try_spawn("alacritty", &[&cwd]) {
-        return Ok(format!("alacritty:{dir_s}"));
-    }
-    if try_spawn("kitty", &["--directory", &dir_s]) {
-        return Ok(format!("kitty:{dir_s}"));
-    }
-
-    if macos {
-        for app in ["Ghostty", "Alacritty", "Kitty"] {
-            if !app_exists(app) {
-                continue;
-            }
-            if try_spawn("open", &["-na", app, "--args", &cwd]) {
-                return Ok(format!("{app}:{dir_s}"));
-            }
+    for app in ["Ghostty", "Alacritty", "Kitty"] {
+        if !app_exists(app) {
+            continue;
         }
-        if try_spawn("open", &["-a", "Terminal", &dir_s]) {
-            return Ok(format!("Terminal.app:{dir_s}"));
+        if try_spawn("open", &["-na", app, "--args", &cwd]) {
+            return Ok(format!("{app}:{dir_s}"));
         }
-        return Err("Could not launch Terminal.app".into());
     }
+    if try_spawn("open", &["-a", "Terminal", &dir_s]) {
+        return Ok(format!("Terminal.app:{dir_s}"));
+    }
+    Err("Could not launch Terminal.app".into())
+}
 
+#[cfg(target_os = "linux")]
+fn open_linux(dir: &Path) -> Result<String, String> {
+    let dir_s = dir.to_string_lossy().to_string();
+    if let Some(hit) = try_unix_path_terms(&dir_s) {
+        return Ok(hit);
+    }
     for candidate in [
         "x-terminal-emulator",
         "sensible-terminal",
@@ -153,7 +165,6 @@ fn open_unix(dir: &Path, macos: bool) -> Result<String, String> {
             return Ok(format!("{candidate}:{dir_s}"));
         }
     }
-
     Err("No terminal emulator found (ghostty / alacritty / kitty / x-terminal-emulator)".into())
 }
 
@@ -166,7 +177,6 @@ fn open_windows(dir: &Path) -> Result<String, String> {
         return Ok(format!("ghostty:{dir_s}"));
     }
 
-    // `start` returns immediately; avoids the Win11 wait cursor from `where` + a blocked spawn.
     if try_spawn("cmd", &["/C", "start", "", "wt.exe", "-d", &dir_s])
         || try_spawn("wt.exe", &["-d", &dir_s])
         || try_spawn("wt", &["-d", &dir_s])
