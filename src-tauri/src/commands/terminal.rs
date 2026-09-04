@@ -2,7 +2,13 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 #[tauri::command]
-pub fn open_external_terminal(path: Option<String>) -> Result<String, String> {
+pub async fn open_external_terminal(path: Option<String>) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || open_sync(path))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn open_sync(path: Option<String>) -> Result<String, String> {
     let target = resolve_path(path)?;
 
     #[cfg(target_os = "windows")]
@@ -44,29 +50,6 @@ fn resolve_path(path: Option<String>) -> Result<PathBuf, String> {
         .map_err(|_| "Could not resolve a working directory".into())
 }
 
-fn on_path(bin: &str) -> bool {
-    #[cfg(windows)]
-    {
-        Command::new("where")
-            .arg(bin)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
-    }
-    #[cfg(not(windows))]
-    {
-        Command::new("which")
-            .arg(bin)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
-    }
-}
-
 fn spawn_detached(mut cmd: Command) -> Result<(), String> {
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -77,8 +60,7 @@ fn spawn_detached(mut cmd: Command) -> Result<(), String> {
         use std::os::windows::process::CommandExt;
         const DETACHED_PROCESS: u32 = 0x00000008;
         const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-        cmd.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW);
+        cmd.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
     }
 
     #[cfg(unix)]
@@ -93,6 +75,12 @@ fn spawn_detached(mut cmd: Command) -> Result<(), String> {
     }
 
     cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
+fn try_spawn(bin: &str, args: &[&str]) -> bool {
+    let mut cmd = Command::new(bin);
+    cmd.args(args);
+    spawn_detached(cmd).is_ok()
 }
 
 #[cfg(unix)]
@@ -110,62 +98,58 @@ unsafe fn libc_syscall_setsid() {
     let _ = setsid();
 }
 
+#[cfg(target_os = "macos")]
+fn app_exists(name: &str) -> bool {
+    Path::new(&format!("/Applications/{name}.app")).exists()
+        || Path::new(&format!("/Applications/{name}.app/Contents/MacOS/{name}")).exists()
+}
+
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn open_unix(dir: &Path, macos: bool) -> Result<String, String> {
     let dir_s = dir.to_string_lossy().to_string();
+    let cwd = format!("--working-directory={dir_s}");
 
-    if on_path("ghostty") {
-        let mut cmd = Command::new("ghostty");
-        cmd.arg(format!("--working-directory={dir_s}"));
-        spawn_detached(cmd)?;
+    if try_spawn("ghostty", &[&cwd]) {
         return Ok(format!("ghostty:{dir_s}"));
     }
-    if on_path("alacritty") {
-        let mut cmd = Command::new("alacritty");
-        cmd.arg(format!("--working-directory={dir_s}"));
-        spawn_detached(cmd)?;
+    if try_spawn("alacritty", &[&cwd]) {
         return Ok(format!("alacritty:{dir_s}"));
     }
-    if on_path("kitty") {
-        let mut cmd = Command::new("kitty");
-        cmd.arg("--directory").arg(&dir_s);
-        spawn_detached(cmd)?;
+    if try_spawn("kitty", &["--directory", &dir_s]) {
         return Ok(format!("kitty:{dir_s}"));
     }
 
     if macos {
         for app in ["Ghostty", "Alacritty", "Kitty"] {
-            let mut probe = Command::new("open");
-            probe.arg("-Ra").arg(app);
-            if probe
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .map(|s| s.success())
-                .unwrap_or(false)
-            {
-                let mut cmd = Command::new("open");
-                cmd.arg("-na")
-                    .arg(app)
-                    .arg("--args")
-                    .arg(format!("--working-directory={dir_s}"));
-                spawn_detached(cmd)?;
+            if !app_exists(app) {
+                continue;
+            }
+            if try_spawn("open", &["-na", app, "--args", &cwd]) {
                 return Ok(format!("{app}:{dir_s}"));
             }
         }
-        let mut cmd = Command::new("open");
-        cmd.arg("-a").arg("Terminal").arg(&dir_s);
-        spawn_detached(cmd)?;
-        return Ok(format!("Terminal.app:{dir_s}"));
+        if try_spawn("open", &["-a", "Terminal", &dir_s]) {
+            return Ok(format!("Terminal.app:{dir_s}"));
+        }
+        return Err("Could not launch Terminal.app".into());
     }
 
-    for candidate in ["x-terminal-emulator", "sensible-terminal", "gnome-terminal", "konsole", "xfce4-terminal"] {
-        if on_path(candidate) {
-            let mut cmd = Command::new(candidate);
-            if candidate == "gnome-terminal" || candidate == "konsole" || candidate == "xfce4-terminal" {
-                cmd.arg("--working-directory").arg(&dir_s);
-            }
-            spawn_detached(cmd)?;
+    for candidate in [
+        "x-terminal-emulator",
+        "sensible-terminal",
+        "gnome-terminal",
+        "konsole",
+        "xfce4-terminal",
+    ] {
+        let ok = if candidate == "gnome-terminal"
+            || candidate == "konsole"
+            || candidate == "xfce4-terminal"
+        {
+            try_spawn(candidate, &["--working-directory", &dir_s])
+        } else {
+            try_spawn(candidate, &[])
+        };
+        if ok {
             return Ok(format!("{candidate}:{dir_s}"));
         }
     }
@@ -176,25 +160,26 @@ fn open_unix(dir: &Path, macos: bool) -> Result<String, String> {
 #[cfg(target_os = "windows")]
 fn open_windows(dir: &Path) -> Result<String, String> {
     let dir_s = dir.to_string_lossy().to_string();
+    let cwd = format!("--working-directory={dir_s}");
 
-    if on_path("ghostty.exe") || on_path("ghostty") {
-        let mut cmd = Command::new("ghostty");
-        cmd.arg(format!("--working-directory={dir_s}"));
-        spawn_detached(cmd)?;
+    if try_spawn("ghostty", &[&cwd]) || try_spawn("ghostty.exe", &[&cwd]) {
         return Ok(format!("ghostty:{dir_s}"));
     }
 
-    if on_path("wt.exe") || on_path("wt") {
-        let mut cmd = Command::new("wt.exe");
-        cmd.arg("-d").arg(&dir_s);
-        spawn_detached(cmd)?;
+    // `start` returns immediately; avoids the Win11 wait cursor from `where` + a blocked spawn.
+    if try_spawn("cmd", &["/C", "start", "", "wt.exe", "-d", &dir_s])
+        || try_spawn("wt.exe", &["-d", &dir_s])
+        || try_spawn("wt", &["-d", &dir_s])
+    {
         return Ok(format!("wt:{dir_s}"));
     }
 
-    let mut cmd = Command::new("powershell.exe");
-    cmd.arg("-NoExit")
-        .arg("-Command")
-        .arg(format!("Set-Location '{}'", dir_s.replace('\'', "''")));
-    spawn_detached(cmd)?;
-    Ok(format!("powershell:{dir_s}"))
+    let cd = format!("Set-Location '{}'", dir_s.replace('\'', "''"));
+    if try_spawn("cmd", &["/C", "start", "", "powershell.exe", "-NoExit", "-Command", &cd])
+        || try_spawn("powershell.exe", &["-NoExit", "-Command", &cd])
+    {
+        return Ok(format!("powershell:{dir_s}"));
+    }
+
+    Err("Could not launch Windows Terminal or PowerShell".into())
 }
