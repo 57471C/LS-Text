@@ -83,6 +83,7 @@ fn try_spawn(bin: &str, args: &[&str]) -> bool {
     spawn_detached(cmd).is_ok()
 }
 
+#[cfg(unix)]
 fn try_unix_path_terms(dir_s: &str) -> Option<String> {
     let cwd = format!("--working-directory={dir_s}");
     if try_spawn("ghostty", &[&cwd]) {
