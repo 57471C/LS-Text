@@ -9,3 +9,10 @@ src-tauri/gen
 !.env.example
 *.key
 .tauri/
+
+# local Grok / capture junk
+screenshots/
+attachments/
+artifacts/
+.grok/
+

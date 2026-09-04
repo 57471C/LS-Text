@@ -1,6 +1,6 @@
 [package]
 name = "ls-text"
-version = "0.1.1"
+version = "0.1.2"
 description = "LS.Text — fast local scratchpad from Lean.Studio"
 authors = ["Lean.Studio"]
 license = "MIT"

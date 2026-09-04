@@ -5,7 +5,7 @@ Fast local scratchpad from [Lean.Studio](https://lean.studio). Instant boot, Cod
 **Not** the process suite (TimeStudy / Mapper / Stats). It is the open-source notepad you open when you do not want a dump in the IDE or the OS editor.
 
 - Identifier: `com.leanstudio.lstext`
-- Version: `0.1.1`
+- Version: `0.1.2`
 - License: [MIT](LICENSE)
 - Stack: Tauri v2 · React 19 · Vite · Tailwind · CodeMirror 6
 

@@ -1,7 +1,7 @@
 {
   "name": "ls-text",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "description": "LS.Text — fast local scratchpad editor from Lean.Studio",
   "type": "module",
