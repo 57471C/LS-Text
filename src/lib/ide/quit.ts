@@ -17,6 +17,23 @@ export function hasQuitWorthyTabs(
 
 export async function forceNativeClose() {
   allowNativeClose = true;
-  const { getCurrentWindow } = await import("@tauri-apps/api/window");
-  await getCurrentWindow().close();
+  try {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    const win = getCurrentWindow();
+    try {
+      await win.destroy();
+      return;
+    } catch {
+      await win.close();
+      return;
+    }
+  } catch {
+    /* fall through */
+  }
+  try {
+    const { exit } = await import("@tauri-apps/plugin-process");
+    await exit(0);
+  } catch {
+    window.close();
+  }
 }
