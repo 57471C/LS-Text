@@ -1,6 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toggleBase64InEditor } from "@/lib/ide/base64";
-import { isDirty, useIde } from "@/lib/ide/store";
+import { useIde } from "@/lib/ide/store";
+import {
+  forceNativeClose,
+  hasQuitWorthyTabs,
+  shouldAllowNativeClose,
+} from "@/lib/ide/quit";
 import { isTauriRuntime } from "@/lib/ide/tauri";
 import { ActivityBar } from "./ActivityBar";
 import { CommandPalette } from "./CommandPalette";
@@ -25,7 +30,8 @@ export function IdeShell() {
 
   useEffect(() => {
     const onUnload = (e: BeforeUnloadEvent) => {
-      if (!useIde.getState().tabs.some(isDirty)) return;
+      if (shouldAllowNativeClose()) return;
+      if (!hasQuitWorthyTabs(useIde.getState().tabs)) return;
       e.preventDefault();
       e.returnValue = "";
     };
@@ -41,10 +47,19 @@ export function IdeShell() {
       if (gone) return;
       void getCurrentWindow()
         .onCloseRequested((event) => {
-          if (!useIde.getState().tabs.some(isDirty)) return;
+          if (shouldAllowNativeClose()) return;
+          if (!hasQuitWorthyTabs(useIde.getState().tabs)) return;
           event.preventDefault();
-          const dirty = useIde.getState().tabs.find(isDirty);
-          if (dirty) useIde.getState().closeTab(dirty.id);
+          const n = useIde.getState().tabs.filter((t) => {
+            if (t.content === t.originalContent) return false;
+            if (t.isUntitled && t.content.trim() === "") return false;
+            return true;
+          }).length;
+          useIde.getState().requestPrompt({
+            kind: "quit-dirty",
+            path: "",
+            value: String(n),
+          });
         })
         .then((fn) => {
           if (gone) fn();
