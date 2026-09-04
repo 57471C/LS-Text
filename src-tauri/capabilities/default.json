@@ -7,11 +7,14 @@
     "core:default",
     "core:path:default",
     "core:window:allow-start-dragging",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
     "dialog:default",
     "store:default",
     "shell:allow-open",
     "updater:default",
     "process:allow-restart",
+    "process:allow-exit",
     {
       "identifier": "fs:default",
       "allow": [
