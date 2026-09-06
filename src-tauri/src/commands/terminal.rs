@@ -83,6 +83,14 @@ fn try_spawn(bin: &str, args: &[&str]) -> bool {
     spawn_detached(cmd).is_ok()
 }
 
+#[cfg(windows)]
+fn try_spawn_dir(bin: &str, args: &[&str], dir: &Path) -> bool {
+    let mut cmd = Command::new(bin);
+    cmd.args(args);
+    cmd.current_dir(dir);
+    spawn_detached(cmd).is_ok()
+}
+
 #[cfg(unix)]
 fn try_unix_path_terms(dir_s: &str) -> Option<String> {
     let cwd = format!("--working-directory={dir_s}");
@@ -171,22 +179,20 @@ fn open_linux(dir: &Path) -> Result<String, String> {
 #[cfg(target_os = "windows")]
 fn open_windows(dir: &Path) -> Result<String, String> {
     let dir_s = dir.to_string_lossy().to_string();
-    let cwd = format!("--working-directory={dir_s}");
 
-    if try_spawn("ghostty", &[&cwd]) || try_spawn("ghostty.exe", &[&cwd]) {
+    if try_spawn_dir("ghostty", &[], dir) || try_spawn_dir("ghostty.exe", &[], dir) {
         return Ok(format!("ghostty:{dir_s}"));
     }
 
-    if try_spawn("cmd", &["/C", "start", "", "wt.exe", "-d", &dir_s])
-        || try_spawn("wt.exe", &["-d", &dir_s])
-        || try_spawn("wt", &["-d", &dir_s])
+    if try_spawn_dir("cmd", &["/C", "start", "", "wt.exe", "-d", "."], dir)
+        || try_spawn_dir("wt.exe", &["-d", "."], dir)
+        || try_spawn_dir("wt", &["-d", "."], dir)
     {
         return Ok(format!("wt:{dir_s}"));
     }
 
-    let cd = format!("Set-Location '{}'", dir_s.replace('\'', "''"));
-    if try_spawn("cmd", &["/C", "start", "", "powershell.exe", "-NoExit", "-Command", &cd])
-        || try_spawn("powershell.exe", &["-NoExit", "-Command", &cd])
+    if try_spawn_dir("cmd", &["/C", "start", "", "powershell.exe", "-NoExit"], dir)
+        || try_spawn_dir("powershell.exe", &["-NoExit"], dir)
     {
         return Ok(format!("powershell:{dir_s}"));
     }
