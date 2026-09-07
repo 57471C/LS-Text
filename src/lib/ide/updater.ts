@@ -65,31 +65,56 @@ function showUpdateToast(update: Update) {
   card.id = UPDATE_TOAST_ID;
   card.className =
     "pointer-events-auto max-w-sm w-full rounded-xl border shadow-2xl p-4 flex flex-col gap-3 bg-white/95 dark:bg-zinc-900/95 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-100 font-sans";
-  card.innerHTML = `
-    <div class="flex items-start gap-3">
-      <div class="flex h-8 w-8 shrink-0 rounded-lg items-center justify-center text-sm bg-blue-500/15 text-blue-600 dark:text-blue-400">⚡</div>
-      <div class="flex flex-col min-w-0">
-        <p class="text-[12px] font-bold uppercase tracking-wider">Update Available</p>
-        <p class="text-[10px] font-medium mt-1 leading-normal text-zinc-500 dark:text-zinc-400">
-          LS.Text v${version} is ready to install.
-        </p>
-      </div>
-    </div>
-    <div class="flex gap-2 justify-end flex-wrap">
-      <button type="button" data-act="cancel"
-        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer transition-colors">
-        Cancel
-      </button>
-      <button type="button" data-act="now"
-        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-500 text-white cursor-pointer transition-colors">
-        Now
-      </button>
-      <button type="button" data-act="later"
-        class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer transition-colors">
-        When I close
-      </button>
-    </div>
-  `;
+  const topRow = document.createElement("div");
+  topRow.className = "flex items-start gap-3";
+
+  const iconDiv = document.createElement("div");
+  iconDiv.className = "flex h-8 w-8 shrink-0 rounded-lg items-center justify-center text-sm bg-blue-500/15 text-blue-600 dark:text-blue-400";
+  iconDiv.textContent = "⚡";
+
+  const textCol = document.createElement("div");
+  textCol.className = "flex flex-col min-w-0";
+
+  const titleP = document.createElement("p");
+  titleP.className = "text-[12px] font-bold uppercase tracking-wider";
+  titleP.textContent = "Update Available";
+
+  const descP = document.createElement("p");
+  descP.className = "text-[10px] font-medium mt-1 leading-normal text-zinc-500 dark:text-zinc-400";
+  descP.textContent = `LS.Text v${version} is ready to install.`;
+
+  textCol.appendChild(titleP);
+  textCol.appendChild(descP);
+  topRow.appendChild(iconDiv);
+  topRow.appendChild(textCol);
+
+  const btnRow = document.createElement("div");
+  btnRow.className = "flex gap-2 justify-end flex-wrap";
+
+  const btnCancel = document.createElement("button");
+  btnCancel.type = "button";
+  btnCancel.setAttribute("data-act", "cancel");
+  btnCancel.className = "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer transition-colors";
+  btnCancel.textContent = "Cancel";
+
+  const btnNow = document.createElement("button");
+  btnNow.type = "button";
+  btnNow.setAttribute("data-act", "now");
+  btnNow.className = "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-500 text-white cursor-pointer transition-colors";
+  btnNow.textContent = "Now";
+
+  const btnLater = document.createElement("button");
+  btnLater.type = "button";
+  btnLater.setAttribute("data-act", "later");
+  btnLater.className = "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer transition-colors";
+  btnLater.textContent = "When I close";
+
+  btnRow.appendChild(btnCancel);
+  btnRow.appendChild(btnNow);
+  btnRow.appendChild(btnLater);
+
+  card.appendChild(topRow);
+  card.appendChild(btnRow);
 
   card.querySelector('[data-act="cancel"]')?.addEventListener("click", () => {
     removeEl(UPDATE_TOAST_ID);
@@ -114,13 +139,30 @@ function showDownloadProgress(pct: number) {
     card.id = DOWNLOAD_TOAST_ID;
     card.className =
       "pointer-events-auto w-64 rounded-xl border shadow-2xl p-4 flex flex-col gap-2 bg-white/95 dark:bg-zinc-900/95 border-zinc-200 dark:border-zinc-700 font-sans";
-    card.innerHTML = `
-      <p class="text-[12px] font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-100">Downloading Update</p>
-      <div class="h-1.5 w-full rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700">
-        <div data-bar class="h-full bg-blue-500 transition-all duration-300" style="width:0%"></div>
-      </div>
-      <p data-pct class="text-[10px] font-medium text-right text-zinc-500 dark:text-zinc-400">0%</p>
-    `;
+
+    const titleP = document.createElement("p");
+    titleP.className = "text-[12px] font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-100";
+    titleP.textContent = "Downloading Update";
+
+    const barContainer = document.createElement("div");
+    barContainer.className = "h-1.5 w-full rounded-full overflow-hidden bg-zinc-200 dark:bg-zinc-700";
+
+    const barFill = document.createElement("div");
+    barFill.setAttribute("data-bar", "");
+    barFill.className = "h-full bg-blue-500 transition-all duration-300";
+    barFill.style.width = "0%";
+
+    barContainer.appendChild(barFill);
+
+    const pctLabel = document.createElement("p");
+    pctLabel.setAttribute("data-pct", "");
+    pctLabel.className = "text-[10px] font-medium text-right text-zinc-500 dark:text-zinc-400";
+    pctLabel.textContent = "0%";
+
+    card.appendChild(titleP);
+    card.appendChild(barContainer);
+    card.appendChild(pctLabel);
+
     host.appendChild(card);
   }
   const bar = card.querySelector<HTMLElement>("[data-bar]");
@@ -246,10 +288,17 @@ function showApplyingOverlay() {
   el.id = "lstext-update-applying";
   el.className =
     "fixed inset-0 z-[10000] bg-black/80 flex flex-col items-center justify-center gap-3 font-sans";
-  el.innerHTML = `
-    <div class="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
-    <p class="text-sm font-semibold text-zinc-200 tracking-wide uppercase">Installing update…</p>
-  `;
+
+  const spinner = document.createElement("div");
+  spinner.className = "w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin";
+
+  const label = document.createElement("p");
+  label.className = "text-sm font-semibold text-zinc-200 tracking-wide uppercase";
+  label.textContent = "Installing update…";
+
+  el.appendChild(spinner);
+  el.appendChild(label);
+
   document.body.appendChild(el);
 }
 
