@@ -63,16 +63,18 @@ export class TauriDiskFS implements FileSystemAdapter {
   }
 
   async listAllFiles(): Promise<string[]> {
-    const out: string[] = [];
-    const walk = async (dir: string) => {
+    const walk = async (dir: string): Promise<string[]> => {
       const entries = await this.list(dir);
-      for (const e of entries) {
-        if (e.kind === "dir") await walk(e.path);
-        else out.push(e.path);
-      }
+      const promises = entries.map(async (e) => {
+        if (e.kind === "dir") {
+          return walk(e.path);
+        }
+        return [e.path];
+      });
+      const results = await Promise.all(promises);
+      return results.flat();
     };
-    await walk(this.rootPath);
-    return out;
+    return walk(this.rootPath);
   }
 }
 
