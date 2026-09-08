@@ -595,25 +595,46 @@ export const useIde = create<IdeStore>((set, get) => {
       }
       const root = get().fs.rootPath;
       let last = "";
-      const createdDirs = new Set<string>();
+      const dirsToCreate = new Set<string>();
+
       for (const file of files) {
         const dest = joinPath(root, file.relativePath);
         let dir = parentPath(dest);
-        const stack: string[] = [];
-        while (dir && dir !== "/" && dir !== root && !createdDirs.has(dir)) {
-          stack.push(dir);
+        while (dir && dir !== "/" && dir !== root && !dirsToCreate.has(dir)) {
+          dirsToCreate.add(dir);
           dir = parentPath(dir);
         }
-        for (const d of stack.reverse()) {
-          try {
-            await get().fs.mkdir(d);
-          } catch {
-            /* exists */
-          }
-          createdDirs.add(d);
-        }
-        await get().fs.write(dest, file.text);
-        last = dest;
+      }
+
+      const dirsByDepth = new Map<number, string[]>();
+      for (const d of dirsToCreate) {
+        const depth = d.split(/[\\/]/).length;
+        if (!dirsByDepth.has(depth)) dirsByDepth.set(depth, []);
+        dirsByDepth.get(depth)!.push(d);
+      }
+
+      const depths = Array.from(dirsByDepth.keys()).sort((a, b) => a - b);
+      for (const depth of depths) {
+        await Promise.all(
+          dirsByDepth.get(depth)!.map(async (d) => {
+            try {
+              await get().fs.mkdir(d);
+            } catch {
+              /* exists */
+            }
+          })
+        );
+      }
+
+      await Promise.all(
+        files.map(async (file) => {
+          const dest = joinPath(root, file.relativePath);
+          await get().fs.write(dest, file.text);
+        })
+      );
+
+      if (files.length > 0) {
+        last = joinPath(root, files[files.length - 1].relativePath);
       }
       await get().refreshDir(root);
       if (last) await get().openPath(last);
