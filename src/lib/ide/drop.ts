@@ -27,52 +27,56 @@ export async function readDataTransfer(dt: DataTransfer): Promise<{
   let directoryHandle: FileSystemDirectoryHandle | null = null;
   const items = [...dt.items];
 
-  for (const item of items) {
-    if (item.kind !== "file") continue;
-    const handleFn = (
-      item as DataTransferItem & {
-        getAsFileSystemHandle?: () => Promise<FileSystemHandle | null>;
-      }
-    ).getAsFileSystemHandle;
-    if (handleFn) {
-      try {
-        const handle = await handleFn.call(item);
-        if (handle?.kind === "directory" && !directoryHandle) {
-          directoryHandle = handle as FileSystemDirectoryHandle;
-          continue;
+  await Promise.all(
+    items.map(async (item) => {
+      if (item.kind !== "file") return;
+      const handleFn = (
+        item as DataTransferItem & {
+          getAsFileSystemHandle?: () => Promise<FileSystemHandle | null>;
         }
-        if (handle?.kind === "file") {
-          const file = await (handle as FileSystemFileHandle).getFile();
-          const dropped = await fileToDropped(file, file.name);
-          if (dropped) files.push(dropped);
-          continue;
+      ).getAsFileSystemHandle;
+      if (handleFn) {
+        try {
+          const handle = await handleFn.call(item);
+          if (handle?.kind === "directory" && !directoryHandle) {
+            directoryHandle = handle as FileSystemDirectoryHandle;
+            return;
+          }
+          if (handle?.kind === "file") {
+            const file = await (handle as FileSystemFileHandle).getFile();
+            const dropped = await fileToDropped(file, file.name);
+            if (dropped) files.push(dropped);
+            return;
+          }
+        } catch {
+          /* fall through */
         }
-      } catch {
-        /* fall through */
       }
-    }
-    const entryFn = (
-      item as DataTransferItem & {
-        webkitGetAsEntry?: () => FileSystemEntry | null;
+      const entryFn = (
+        item as DataTransferItem & {
+          webkitGetAsEntry?: () => FileSystemEntry | null;
+        }
+      ).webkitGetAsEntry;
+      const entry = entryFn?.call(item) ?? null;
+      if (entry) {
+        await walkEntry(entry, "", files, 0);
+        return;
       }
-    ).webkitGetAsEntry;
-    const entry = entryFn?.call(item) ?? null;
-    if (entry) {
-      await walkEntry(entry, "", files, 0);
-      continue;
-    }
-    const file = item.getAsFile();
-    if (file) {
-      const dropped = await fileToDropped(file, file.name);
-      if (dropped) files.push(dropped);
-    }
-  }
+      const file = item.getAsFile();
+      if (file) {
+        const dropped = await fileToDropped(file, file.name);
+        if (dropped) files.push(dropped);
+      }
+    })
+  );
 
   if (files.length === 0 && dt.files.length > 0 && !directoryHandle) {
-    for (const file of [...dt.files]) {
-      const dropped = await fileToDropped(file, file.name);
-      if (dropped) files.push(dropped);
-    }
+    await Promise.all(
+      [...dt.files].map(async (file) => {
+        const dropped = await fileToDropped(file, file.name);
+        if (dropped) files.push(dropped);
+      })
+    );
   }
 
   return { directoryHandle, files: files.slice(0, MAX_FILES) };
@@ -113,7 +117,7 @@ async function walkEntry(
     reader.readEntries(resolve, () => resolve([]));
   });
   const nextPrefix = prefix ? `${prefix}/${entry.name}` : entry.name;
-  for (const child of children) {
-    await walkEntry(child, nextPrefix, out, depth + 1);
-  }
+  await Promise.all(
+    children.map((child) => walkEntry(child, nextPrefix, out, depth + 1))
+  );
 }
