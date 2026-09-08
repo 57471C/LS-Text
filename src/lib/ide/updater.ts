@@ -320,8 +320,8 @@ export async function checkForApplicationUpdates(opts: { force?: boolean } = {})
         console.log("[Updater] check skipped (disabled in preference)");
         return;
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.warn("[Updater] Failed to read preference:", err);
     }
   }
 
