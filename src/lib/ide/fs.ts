@@ -244,10 +244,12 @@ export class NativeFileSystem implements FileSystemAdapter {
     const out: string[] = [];
     const walk = async (dirPath: string) => {
       const entries = await this.list(dirPath);
-      for (const e of entries) {
-        if (e.kind === "dir") await walk(e.path);
-        else out.push(e.path);
-      }
+      await Promise.all(
+        entries.map(async (e) => {
+          if (e.kind === "dir") await walk(e.path);
+          else out.push(e.path);
+        }),
+      );
     };
     await walk(this.rootPath);
     return out;
