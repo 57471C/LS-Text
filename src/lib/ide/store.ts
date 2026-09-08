@@ -595,11 +595,12 @@ export const useIde = create<IdeStore>((set, get) => {
       }
       const root = get().fs.rootPath;
       let last = "";
+      const createdDirs = new Set<string>();
       for (const file of files) {
         const dest = joinPath(root, file.relativePath);
         let dir = parentPath(dest);
         const stack: string[] = [];
-        while (dir && dir !== "/" && dir !== root) {
+        while (dir && dir !== "/" && dir !== root && !createdDirs.has(dir)) {
           stack.push(dir);
           dir = parentPath(dir);
         }
@@ -609,6 +610,7 @@ export const useIde = create<IdeStore>((set, get) => {
           } catch {
             /* exists */
           }
+          createdDirs.add(d);
         }
         await get().fs.write(dest, file.text);
         last = dest;
