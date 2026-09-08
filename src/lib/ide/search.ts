@@ -58,15 +58,28 @@ export async function searchWorkspace(
   }
 
   const files = (await listAll()).slice(0, MAX_FILES);
-  for (const path of files) {
-    if (seen.has(path)) continue;
-    try {
-      const content = await read(path);
-      hits.push(...scanContent(path, content, q, caseSensitive));
-    } catch {
-      /* unreadable */
+  const unreadFiles = files.filter((path) => !seen.has(path));
+
+  const CHUNK_SIZE = 50;
+  for (let i = 0; i < unreadFiles.length; i += CHUNK_SIZE) {
+    const chunk = unreadFiles.slice(i, i + CHUNK_SIZE);
+    const promises = chunk.map(async (path) => {
+      try {
+        const content = await read(path);
+        return { path, content };
+      } catch {
+        return null;
+      }
+    });
+
+    const results = await Promise.all(promises);
+    for (const res of results) {
+      if (res) {
+        hits.push(...scanContent(res.path, res.content, q, caseSensitive));
+      }
     }
     if (hits.length >= MAX_HITS) break;
   }
+
   return hits.slice(0, MAX_HITS);
 }
