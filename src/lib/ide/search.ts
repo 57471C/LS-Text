@@ -63,8 +63,12 @@ export async function searchWorkspace(
     try {
       const content = await read(path);
       hits.push(...scanContent(path, content, q, caseSensitive));
-    } catch {
-      /* unreadable */
+    } catch (err) {
+      console.warn(`[Search] Failed to read ${path}:`, err);
+      const w = window as unknown as { showToast?: (msg: string, t: string) => void };
+      if (typeof w.showToast === "function") {
+        w.showToast(`Search skipped unreadable file: ${basename(path)}`, "error");
+      }
     }
     if (hits.length >= MAX_HITS) break;
   }
