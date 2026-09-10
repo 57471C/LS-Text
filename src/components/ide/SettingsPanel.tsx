@@ -85,6 +85,27 @@ export function SettingsPanel() {
             onChange={(wordWrap) => useIde.getState().setSettings({ wordWrap })}
           />
           <Toggle
+            label="Line numbers"
+            checked={settings.lineNumbers !== false}
+            onChange={(lineNumbers) => useIde.getState().setSettings({ lineNumbers })}
+          />
+          <Toggle
+            label="Highlight current line"
+            hint="Row and gutter behind the cursor"
+            checked={settings.highlightActiveLine !== false}
+            onChange={(highlightActiveLine) =>
+              useIde.getState().setSettings({ highlightActiveLine })
+            }
+          />
+          <Toggle
+            label="Highlight selection matches"
+            hint="Same text elsewhere in the buffer"
+            checked={settings.highlightSelectionMatches !== false}
+            onChange={(highlightSelectionMatches) =>
+              useIde.getState().setSettings({ highlightSelectionMatches })
+            }
+          />
+          <Toggle
             label="Markdown preview"
             hint="Side-by-side for .md files, scroll-synced"
             checked={previewOpen}
