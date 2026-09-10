@@ -2,6 +2,7 @@ import { Command } from "cmdk";
 import { useEffect, useState } from "react";
 import { toggleBase64InEditor } from "@/lib/ide/base64";
 import { useIde } from "@/lib/ide/store";
+import { checkForUpdatesNow } from "@/lib/ide/updater";
 import { basename, modLabel } from "@/lib/utils";
 
 export function CommandPalette() {
@@ -44,6 +45,7 @@ export function CommandPalette() {
     { id: "font-down", label: "Smaller text", hint: `${mod}+-`, run: () => useIde.getState().bumpFont(-1) },
     { id: "font-reset", label: "Reset text size", hint: `${mod}+0`, run: () => useIde.getState().resetFont() },
     { id: "preview", label: "Toggle markdown preview", hint: `${mod}+Shift+V`, run: () => useIde.getState().togglePreview() },
+    { id: "update", label: "Check for updates", hint: "", run: () => void checkForUpdatesNow() },
     { id: "settings", label: "Open settings", hint: `${mod}+,`, run: () => useIde.getState().toggleSettings() },
     { id: "reset", label: "Reset workspace", hint: "", run: () => void useIde.getState().resetWorkspace() },
   ];

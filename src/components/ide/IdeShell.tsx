@@ -7,6 +7,7 @@ import {
   shouldAllowNativeClose,
 } from "@/lib/ide/quit";
 import { isTauriRuntime } from "@/lib/ide/tauri";
+import { initUpdater } from "@/lib/ide/updater";
 import { ActivityBar } from "./ActivityBar";
 import { CommandPalette } from "./CommandPalette";
 import { DragHandle } from "./DragHandle";
@@ -26,6 +27,10 @@ export function IdeShell() {
 
   useLayoutEffect(() => {
     useIde.getState().hydrate();
+  }, []);
+
+  useEffect(() => {
+    initUpdater();
   }, []);
 
   useEffect(() => {
