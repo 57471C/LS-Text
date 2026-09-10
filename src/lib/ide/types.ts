@@ -24,6 +24,10 @@ export interface EditorSettings {
   wordWrap: boolean;
   autoSave: boolean;
   theme: "dark" | "light";
+  /** Absent means on. */
+  lineNumbers?: boolean;
+  highlightActiveLine?: boolean;
+  highlightSelectionMatches?: boolean;
 }
 
 export interface CursorPos {

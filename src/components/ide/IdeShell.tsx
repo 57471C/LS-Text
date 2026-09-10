@@ -19,6 +19,8 @@ import { SettingsPanel } from "./SettingsPanel";
 import { StatusBar } from "./StatusBar";
 import { TabBar } from "./TabBar";
 
+const EXPLORER_COLLAPSE_WIDTH = 800;
+
 export function IdeShell() {
   const explorerOpen = useIde((s) => s.explorerOpen);
   const [explorerWidth, setExplorerWidth] = useState(240);
@@ -31,6 +33,17 @@ export function IdeShell() {
 
   useEffect(() => {
     initUpdater();
+  }, []);
+
+  useEffect(() => {
+    const collapse = () => {
+      if (window.innerWidth >= EXPLORER_COLLAPSE_WIDTH) return;
+      if (!useIde.getState().explorerOpen) return;
+      useIde.getState().toggleExplorer();
+    };
+    collapse();
+    window.addEventListener("resize", collapse);
+    return () => window.removeEventListener("resize", collapse);
   }, []);
 
   useEffect(() => {
@@ -177,7 +190,7 @@ export function IdeShell() {
             {showExplorer && (
               <>
                 <div
-                  className="hidden min-h-0 shrink-0 md:block"
+                  className="min-h-0 shrink-0"
                   style={{ width: explorerWidth }}
                 >
                   <FileTree />
@@ -187,16 +200,10 @@ export function IdeShell() {
                   onDrag={(delta) =>
                     setExplorerWidth((w) => Math.min(420, Math.max(160, w + delta)))
                   }
-                  className="hidden md:block"
                 />
               </>
             )}
             <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-              {showExplorer && (
-                <div className="absolute inset-0 z-20 border-b border-border md:hidden">
-                  <FileTree />
-                </div>
-              )}
               <TabBar />
               <div className="flex min-h-0 flex-1 flex-col">
                 <EditorPane />

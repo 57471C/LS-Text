@@ -52,6 +52,7 @@
   --shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
   --shadow-border-hover: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
   --shadow-float: 0 16px 40px rgba(0, 0, 0, 0.12);
+  color-scheme: light;
   -webkit-font-smoothing: auto;
   -moz-osx-font-smoothing: auto;
 }
@@ -62,9 +63,14 @@
     cursor: pointer;
   }
 
+  html {
+    color-scheme: dark;
+  }
+
   html,
   body,
-  #app {
+  #app,
+  #root {
     height: 100%;
     background: var(--color-bg);
     color: var(--color-fg);
@@ -83,6 +89,30 @@
   :focus-visible {
     outline: 2px solid color-mix(in oklab, var(--color-accent) 70%, transparent);
     outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) var(--color-surface);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 8px;
+    border: 2px solid var(--color-surface);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted);
+  }
+  ::-webkit-scrollbar-corner {
+    background: var(--color-surface);
   }
 }
 
@@ -115,6 +145,9 @@
 .cm-activeLineGutter,
 .cm-activeLine {
   background: color-mix(in oklab, var(--color-fg) 7%, transparent) !important;
+}
+.cm-selectionMatch {
+  background: color-mix(in oklab, var(--color-accent) 22%, transparent) !important;
 }
 .cm-tooltip {
   background: var(--color-elevated) !important;
