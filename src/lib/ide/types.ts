@@ -24,6 +24,9 @@ export interface EditorSettings {
   wordWrap: boolean;
   autoSave: boolean;
   theme: "dark" | "light";
+  lineNumbers: boolean;
+  highlightActiveLine: boolean;
+  highlightSelectionMatches: boolean;
 }
 
 export interface CursorPos {
