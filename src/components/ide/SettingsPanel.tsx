@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { useIde } from "@/lib/ide/store";
+import { checkForUpdatesNow } from "@/lib/ide/updater";
 import { Button } from "@/components/ui/button";
 import { modLabel } from "@/lib/utils";
 
@@ -95,7 +96,14 @@ export function SettingsPanel() {
             checked={settings.autoSave}
             onChange={(autoSave) => useIde.getState().setSettings({ autoSave })}
           />
-          <div className="border-t border-border pt-4">
+          <div className="border-t border-border pt-4 flex flex-col gap-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => void checkForUpdatesNow()}
+            >
+              Check for updates
+            </Button>
             <Button
               variant="outline"
               className="w-full"
