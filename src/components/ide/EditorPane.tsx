@@ -39,11 +39,33 @@ import { isMarkdownName } from "@/lib/ide/markdown";
 import { bindMarkdownScroll, scrollPreviewToLine } from "@/lib/ide/scroll-sync";
 import { editorTheme } from "@/lib/ide/theme";
 import { countText, useIde } from "@/lib/ide/store";
+import type { EditorSettings } from "@/lib/ide/types";
 
 const langConf = new Compartment();
 const wrapConf = new Compartment();
 const tabConf = new Compartment();
 const themeConf = new Compartment();
+const lineNoConf = new Compartment();
+const activeLineConf = new Compartment();
+const matchSelConf = new Compartment();
+
+function on(flag: boolean | undefined) {
+  return flag !== false;
+}
+
+function lineNoExt(settings: EditorSettings) {
+  return on(settings.lineNumbers) ? lineNumbers() : [];
+}
+
+function activeLineExt(settings: EditorSettings) {
+  return on(settings.highlightActiveLine)
+    ? [highlightActiveLine(), highlightActiveLineGutter()]
+    : [];
+}
+
+function matchSelExt(settings: EditorSettings) {
+  return on(settings.highlightSelectionMatches) ? highlightSelectionMatches() : [];
+}
 
 function syncEditorMeta(view: EditorView) {
   const doc = view.state.doc.toString();
@@ -66,10 +88,7 @@ function syncEditorMeta(view: EditorView) {
   });
 }
 
-function applyEditorSettings(
-  view: EditorView,
-  settings: { wordWrap: boolean; tabSize: number; theme: "dark" | "light" },
-) {
+function applyEditorSettings(view: EditorView, settings: EditorSettings) {
   const spaces = " ".repeat(settings.tabSize);
   view.dispatch({
     effects: [
@@ -79,19 +98,18 @@ function applyEditorSettings(
         indentUnit.of(spaces),
       ]),
       themeConf.reconfigure(editorTheme(settings.theme)),
+      lineNoConf.reconfigure(lineNoExt(settings)),
+      activeLineConf.reconfigure(activeLineExt(settings)),
+      matchSelConf.reconfigure(matchSelExt(settings)),
     ],
   });
 }
 
-function buildExtensions(
-  tabId: string,
-  settings: { wordWrap: boolean; tabSize: number; theme: "dark" | "light" },
-) {
+function buildExtensions(tabId: string, settings: EditorSettings) {
   const spaces = " ".repeat(settings.tabSize);
   return [
-    lineNumbers(),
-    highlightActiveLineGutter(),
-    highlightActiveLine(),
+    lineNoConf.of(lineNoExt(settings)),
+    activeLineConf.of(activeLineExt(settings)),
     foldGutter(),
     drawSelection(),
     dropCursor(),
@@ -102,7 +120,7 @@ function buildExtensions(
     autocompletion(),
     rectangularSelection(),
     crosshairCursor(),
-    highlightSelectionMatches(),
+    matchSelConf.of(matchSelExt(settings)),
     history(),
     keymap.of([
       indentWithTab,
@@ -233,7 +251,14 @@ export function EditorPane() {
     const view = viewRef.current;
     if (!view) return;
     applyEditorSettings(view, settings);
-  }, [settings.wordWrap, settings.tabSize, settings.theme]);
+  }, [
+    settings.wordWrap,
+    settings.tabSize,
+    settings.theme,
+    settings.lineNumbers,
+    settings.highlightActiveLine,
+    settings.highlightSelectionMatches,
+  ]);
 
   useEffect(() => {
     const view = viewRef.current;
