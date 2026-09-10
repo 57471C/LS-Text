@@ -34,7 +34,7 @@ import { useEffect, useRef, useState } from "react";
 import { DragHandle } from "./DragHandle";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { bindEditorView } from "@/lib/ide/base64";
-import { loadLanguage } from "@/lib/ide/languages";
+import { isPythonName, loadLanguage } from "@/lib/ide/languages";
 import { isMarkdownName } from "@/lib/ide/markdown";
 import { bindMarkdownScroll, scrollPreviewToLine } from "@/lib/ide/scroll-sync";
 import { editorTheme } from "@/lib/ide/theme";
@@ -51,6 +51,15 @@ const matchSelConf = new Compartment();
 
 function on(flag: boolean | undefined) {
   return flag !== false;
+}
+
+function tabSizeFor(filename: string, settings: EditorSettings) {
+  return isPythonName(filename) ? 4 : settings.tabSize;
+}
+
+function tabExt(filename: string, settings: EditorSettings) {
+  const size = tabSizeFor(filename, settings);
+  return [EditorState.tabSize.of(size), indentUnit.of(" ".repeat(size))];
 }
 
 function lineNoExt(settings: EditorSettings) {
@@ -88,15 +97,15 @@ function syncEditorMeta(view: EditorView) {
   });
 }
 
-function applyEditorSettings(view: EditorView, settings: EditorSettings) {
-  const spaces = " ".repeat(settings.tabSize);
+function applyEditorSettings(
+  view: EditorView,
+  settings: EditorSettings,
+  filename: string,
+) {
   view.dispatch({
     effects: [
       wrapConf.reconfigure(settings.wordWrap ? EditorView.lineWrapping : []),
-      tabConf.reconfigure([
-        EditorState.tabSize.of(settings.tabSize),
-        indentUnit.of(spaces),
-      ]),
+      tabConf.reconfigure(tabExt(filename, settings)),
       themeConf.reconfigure(editorTheme(settings.theme)),
       lineNoConf.reconfigure(lineNoExt(settings)),
       activeLineConf.reconfigure(activeLineExt(settings)),
@@ -105,8 +114,11 @@ function applyEditorSettings(view: EditorView, settings: EditorSettings) {
   });
 }
 
-function buildExtensions(tabId: string, settings: EditorSettings) {
-  const spaces = " ".repeat(settings.tabSize);
+function buildExtensions(
+  tabId: string,
+  settings: EditorSettings,
+  filename: string,
+) {
   return [
     lineNoConf.of(lineNoExt(settings)),
     activeLineConf.of(activeLineExt(settings)),
@@ -133,7 +145,7 @@ function buildExtensions(tabId: string, settings: EditorSettings) {
     ]),
     langConf.of([]),
     wrapConf.of(settings.wordWrap ? EditorView.lineWrapping : []),
-    tabConf.of([EditorState.tabSize.of(settings.tabSize), indentUnit.of(spaces)]),
+    tabConf.of(tabExt(filename, settings)),
     themeConf.of(editorTheme(settings.theme)),
     EditorView.updateListener.of((vu) => {
       if (vu.docChanged) {
@@ -171,7 +183,7 @@ export function EditorPane() {
       parent: parentRef.current,
       state: EditorState.create({
         doc: "",
-        extensions: buildExtensions("__empty__", useIde.getState().settings),
+        extensions: buildExtensions("__empty__", useIde.getState().settings, ""),
       }),
     });
     viewRef.current = view;
@@ -202,13 +214,13 @@ export function EditorPane() {
     } else {
       const state = EditorState.create({
         doc: tab.content,
-        extensions: buildExtensions(tab.id, useIde.getState().settings),
+        extensions: buildExtensions(tab.id, useIde.getState().settings, tab.name),
       });
       statesRef.current.set(tab.id, state);
       view.setState(state);
     }
     currentId.current = tabId;
-    applyEditorSettings(view, useIde.getState().settings);
+    applyEditorSettings(view, useIde.getState().settings, tab.name);
     syncEditorMeta(view);
     void loadLanguage(tab.name).then((lang) => {
       const v = viewRef.current;
@@ -245,13 +257,15 @@ export function EditorPane() {
       if (!v || currentId.current !== tabId) return;
       v.dispatch({ effects: langConf.reconfigure(lang ?? []) });
     });
+    applyEditorSettings(view, useIde.getState().settings, tabName);
   }, [tabName, tabId]);
 
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    applyEditorSettings(view, settings);
+    applyEditorSettings(view, settings, tabName);
   }, [
+    tabName,
     settings.wordWrap,
     settings.tabSize,
     settings.theme,
