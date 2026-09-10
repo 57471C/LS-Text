@@ -39,6 +39,10 @@ export function isEnvName(filename: string) {
   );
 }
 
+export function isPythonName(filename: string) {
+  return extname(filename) === "py";
+}
+
 export function languageLabel(filename: string) {
   if (isEnvName(filename)) return "Dotenv";
   const ext = extname(filename);
