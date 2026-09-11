@@ -58,9 +58,10 @@ fn spawn_detached(mut cmd: Command) -> Result<(), String> {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        const DETACHED_PROCESS: u32 = 0x00000008;
-        const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
-        cmd.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+        // New visible console so the child can take foreground.
+        // DETACHED_PROCESS is why Ghostty/WT often opened behind LS.Text.
+        const CREATE_NEW_CONSOLE: u32 = 0x00000010;
+        cmd.creation_flags(CREATE_NEW_CONSOLE);
     }
 
     #[cfg(unix)]
@@ -85,11 +86,15 @@ fn try_spawn(bin: &str, args: &[&str]) -> bool {
 }
 
 #[cfg(windows)]
-fn try_spawn_dir(bin: &str, args: &[&str], dir: &Path) -> bool {
-    let mut cmd = Command::new(bin);
-    cmd.args(args);
-    cmd.current_dir(dir);
-    spawn_detached(cmd).is_ok()
+fn try_start(app: &str, extra: &[&str], dir: &Path) -> bool {
+    let dir_s = dir.to_string_lossy().to_string();
+    let mut cmd = Command::new("cmd");
+    cmd.args(["/C", "start", "", "/D", &dir_s, app]);
+    cmd.args(extra);
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    cmd.spawn().is_ok()
 }
 
 #[cfg(unix)]
@@ -129,9 +134,23 @@ fn app_exists(name: &str) -> bool {
 }
 
 #[cfg(target_os = "macos")]
+fn activate_app(name: &str) {
+    let script = format!("tell application \"{name}\" to activate");
+    let _ = try_spawn("osascript", &["-e", &script]);
+}
+
+#[cfg(target_os = "macos")]
 fn open_macos(dir: &Path) -> Result<String, String> {
     let dir_s = dir.to_string_lossy().to_string();
     if let Some(hit) = try_unix_path_terms(&dir_s) {
+        let app = hit.split(':').next().unwrap_or("Ghostty");
+        let pretty = match app {
+            "ghostty" => "Ghostty",
+            "alacritty" => "Alacritty",
+            "kitty" => "Kitty",
+            other => other,
+        };
+        activate_app(pretty);
         return Ok(hit);
     }
     let cwd = format!("--working-directory={dir_s}");
@@ -139,11 +158,13 @@ fn open_macos(dir: &Path) -> Result<String, String> {
         if !app_exists(app) {
             continue;
         }
-        if try_spawn("open", &["-na", app, "--args", &cwd]) {
+        if try_spawn("open", &["-a", app, "--args", &cwd]) {
+            activate_app(app);
             return Ok(format!("{app}:{dir_s}"));
         }
     }
     if try_spawn("open", &["-a", "Terminal", &dir_s]) {
+        activate_app("Terminal");
         return Ok(format!("Terminal.app:{dir_s}"));
     }
     Err("Could not launch Terminal.app".into())
@@ -181,20 +202,15 @@ fn open_linux(dir: &Path) -> Result<String, String> {
 fn open_windows(dir: &Path) -> Result<String, String> {
     let dir_s = dir.to_string_lossy().to_string();
 
-    if try_spawn_dir("ghostty", &[], dir) || try_spawn_dir("ghostty.exe", &[], dir) {
+    if try_start("ghostty.exe", &[], dir) || try_start("ghostty", &[], dir) {
         return Ok(format!("ghostty:{dir_s}"));
     }
 
-    if try_spawn_dir("cmd", &["/C", "start", "", "wt.exe", "-d", "."], dir)
-        || try_spawn_dir("wt.exe", &["-d", "."], dir)
-        || try_spawn_dir("wt", &["-d", "."], dir)
-    {
+    if try_start("wt.exe", &["-d", "."], dir) || try_start("wt", &["-d", "."], dir) {
         return Ok(format!("wt:{dir_s}"));
     }
 
-    if try_spawn_dir("cmd", &["/C", "start", "", "powershell.exe", "-NoExit"], dir)
-        || try_spawn_dir("powershell.exe", &["-NoExit"], dir)
-    {
+    if try_start("powershell.exe", &["-NoExit"], dir) {
         return Ok(format!("powershell:{dir_s}"));
     }
 
