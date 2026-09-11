@@ -73,7 +73,22 @@ fn try_spawn(bin: &str, args: &[&str]) -> bool {
 }
 
 #[cfg(windows)]
+fn on_path(name: &str) -> bool {
+    Command::new("where")
+        .args(["/Q", name])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+#[cfg(windows)]
 fn try_start(app: &str, extra: &[&str], dir: &Path) -> bool {
+    if !on_path(app) {
+        return false;
+    }
     let dir_s = dir.to_string_lossy().to_string();
     let mut cmd = Command::new("cmd");
     cmd.args(["/C", "start", "", "/D", &dir_s, app]);
