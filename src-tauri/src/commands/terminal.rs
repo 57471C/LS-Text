@@ -77,6 +77,7 @@ fn spawn_detached(mut cmd: Command) -> Result<(), String> {
     cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
+#[cfg(unix)]
 fn try_spawn(bin: &str, args: &[&str]) -> bool {
     let mut cmd = Command::new(bin);
     cmd.args(args);
