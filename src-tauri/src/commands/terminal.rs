@@ -204,10 +204,6 @@ fn open_linux(dir: &Path) -> Result<String, String> {
 fn open_windows(dir: &Path) -> Result<String, String> {
     let dir_s = dir.to_string_lossy().to_string();
 
-    if try_start("ghostty.exe", &[], dir) || try_start("ghostty", &[], dir) {
-        return Ok(format!("ghostty:{dir_s}"));
-    }
-
     if try_start("wt.exe", &["-d", "."], dir) || try_start("wt", &["-d", "."], dir) {
         return Ok(format!("wt:{dir_s}"));
     }
