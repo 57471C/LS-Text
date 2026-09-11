@@ -50,31 +50,18 @@ fn resolve_path(path: Option<String>) -> Result<PathBuf, String> {
         .map_err(|_| "Could not resolve a working directory".into())
 }
 
+#[cfg(unix)]
 fn spawn_detached(mut cmd: Command) -> Result<(), String> {
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        // New visible console so the child can take foreground.
-        // DETACHED_PROCESS is why Ghostty/WT often opened behind LS.Text.
-        const CREATE_NEW_CONSOLE: u32 = 0x00000010;
-        cmd.creation_flags(CREATE_NEW_CONSOLE);
+    use std::os::unix::process::CommandExt;
+    unsafe {
+        cmd.pre_exec(|| {
+            libc_setsid();
+            Ok(())
+        });
     }
-
-    #[cfg(unix)]
-    {
-        use std::os::unix::process::CommandExt;
-        unsafe {
-            cmd.pre_exec(|| {
-                libc_setsid();
-                Ok(())
-            });
-        }
-    }
-
     cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
