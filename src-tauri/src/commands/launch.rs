@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[tauri::command]
 pub fn launch_paths() -> Vec<String> {
@@ -74,9 +74,4 @@ fn from_hex(b: u8) -> Option<u8> {
         b'A'..=b'F' => Some(b - b'A' + 10),
         _ => None,
     }
-}
-
-#[allow(dead_code)]
-fn _is_path(p: &Path) -> bool {
-    p.exists()
 }
