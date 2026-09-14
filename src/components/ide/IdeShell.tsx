@@ -28,7 +28,10 @@ export function IdeShell() {
   const dragDepth = useRef(0);
 
   useLayoutEffect(() => {
-    useIde.getState().hydrate();
+    void (async () => {
+      await useIde.getState().hydrate();
+      await useIde.getState().openLaunchFiles();
+    })();
   }, []);
 
   useEffect(() => {
