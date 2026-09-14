@@ -26,7 +26,8 @@
         { "path": "$APPDATA/**" },
         { "path": "$APPCONFIG/**" },
         { "path": "$APPCACHE/**" },
-        { "path": "$APPLOCALDATA/**" }
+        { "path": "$APPLOCALDATA/**" },
+        { "path": "$TEMP/**" }
       ]
     },
     "fs:allow-read-text-file",
