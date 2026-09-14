@@ -1,6 +1,7 @@
 mod commands;
 
 use commands::fs_extra::list_dir;
+use commands::launch::launch_paths;
 use commands::terminal::open_external_terminal;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -14,7 +15,8 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             open_external_terminal,
-            list_dir
+            list_dir,
+            launch_paths
         ])
         .run(tauri::generate_context!())
         .expect("error while running LS-Text");

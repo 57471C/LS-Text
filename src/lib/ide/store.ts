@@ -9,7 +9,7 @@ import { languageLabel } from "./languages";
 import { loadSession, saveSession } from "./persist";
 import { createSeedSnapshot } from "./seed";
 import { isTauriRuntime, openExternalTerminal, pickTauriFolder } from "./tauri";
-import { TauriDiskFS } from "./tauri-fs";
+import { isOsPath, readOsFile, TauriDiskFS, writeOsFile } from "./tauri-fs";
 import { readDataTransfer } from "./drop";
 import type {
   CursorPos,
@@ -109,6 +109,7 @@ export interface IdeStore {
   status: string;
 
   hydrate: () => Promise<void>;
+  openLaunchFiles: () => Promise<void>;
   persistNow: () => void;
   setActiveTab: (id: string) => void;
   openPath: (path: string) => Promise<void>;
@@ -261,6 +262,28 @@ export const useIde = create<IdeStore>((set, get) => {
     }
   },
 
+  openLaunchFiles: async () => {
+    const { getLaunchPaths } = await import("./tauri");
+    const paths = await getLaunchPaths();
+    if (paths.length === 0) return;
+    for (const path of paths) {
+      try {
+        await get().openPath(path);
+      } catch (err) {
+        set({
+          status: err instanceof Error ? err.message : `Could not open ${path}`,
+        });
+      }
+    }
+    const leftovers = get().tabs.filter(
+      (t) => t.isUntitled && t.content === "" && t.content === t.originalContent,
+    );
+    for (const t of leftovers) {
+      if (get().tabs.length <= 1) break;
+      get().closeTab(t.id, true);
+    }
+  },
+
   persistNow: () => {
     const s = get();
     void saveSession({
@@ -292,7 +315,10 @@ export const useIde = create<IdeStore>((set, get) => {
       set({ activeTabId: existing.id, paletteOpen: false });
       return;
     }
-    const content = await s.fs.read(path);
+    const content =
+      isOsPath(path) && isTauriRuntime()
+        ? await readOsFile(path)
+        : await s.fs.read(path);
     const tab: Tab = {
       id: uid(),
       path,
@@ -440,7 +466,11 @@ export const useIde = create<IdeStore>((set, get) => {
       });
       return;
     }
-    await s.fs.write(tab.path, tab.content);
+    if (isOsPath(tab.path) && isTauriRuntime()) {
+      await writeOsFile(tab.path, tab.content);
+    } else {
+      await s.fs.write(tab.path, tab.content);
+    }
     set({
       tabs: get().tabs.map((t) =>
         t.id === tab.id ? { ...t, originalContent: t.content } : t,
@@ -454,7 +484,11 @@ export const useIde = create<IdeStore>((set, get) => {
     const s = get();
     const tab = s.tabs.find((t) => t.id === id);
     if (!tab) return;
-    await s.fs.write(destPath, tab.content);
+    if (isOsPath(destPath) && isTauriRuntime()) {
+      await writeOsFile(destPath, tab.content);
+    } else {
+      await s.fs.write(destPath, tab.content);
+    }
     set({
       tabs: get().tabs.map((t) =>
         t.id === id

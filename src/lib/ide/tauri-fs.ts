@@ -15,6 +15,36 @@ interface RustDirEntry {
   is_dir: boolean;
 }
 
+export function isOsPath(path: string) {
+  if (!path || path.startsWith("__scratch__")) return false;
+  if (/^[A-Za-z]:[\\/]/.test(path)) return true;
+  if (path.startsWith("\\\\")) return true;
+  return (
+    path.startsWith("/Users/") ||
+    path.startsWith("/home/") ||
+    path.startsWith("/tmp/") ||
+    path.startsWith("/var/") ||
+    path.startsWith("/private/var/") ||
+    path.startsWith("/private/tmp/")
+  );
+}
+
+export async function readOsFile(path: string) {
+  return readTextFile(path);
+}
+
+export async function writeOsFile(path: string, content: string) {
+  const dir = parentPath(path);
+  if (dir && dir !== path) {
+    try {
+      await mkdir(dir, { recursive: true });
+    } catch {
+      /* exists */
+    }
+  }
+  await writeTextFile(path, content);
+}
+
 export class TauriDiskFS implements FileSystemAdapter {
   kind = "native" as const;
   name: string;
@@ -39,15 +69,7 @@ export class TauriDiskFS implements FileSystemAdapter {
   }
 
   async write(path: string, content: string): Promise<void> {
-    const dir = parentPath(path);
-    if (dir && dir !== path) {
-      try {
-        await mkdir(dir, { recursive: true });
-      } catch {
-        /* exists */
-      }
-    }
-    await writeTextFile(path, content);
+    await writeOsFile(path, content);
   }
 
   async mkdir(path: string): Promise<void> {

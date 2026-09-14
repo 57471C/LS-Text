@@ -28,3 +28,10 @@ export async function desktopHomeDir(): Promise<string | null> {
   const { homeDir } = await import("@tauri-apps/api/path");
   return homeDir();
 }
+
+export async function getLaunchPaths(): Promise<string[]> {
+  if (!isTauriRuntime()) return [];
+  const { invoke } = await import("@tauri-apps/api/core");
+  const paths = await invoke<string[]>("launch_paths");
+  return Array.isArray(paths) ? paths : [];
+}
