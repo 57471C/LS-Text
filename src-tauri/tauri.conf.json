@@ -41,7 +41,39 @@
     "createUpdaterArtifacts": true,
     "category": "DeveloperTool",
     "shortDescription": "Fast scratchpad editor from Lean.Studio",
-    "longDescription": "LS.Text is a local-first scratchpad and micro-editor. Instant boot, CodeMirror 6, optional folder tree and terminal launcher. Open source (MIT) supporting tool in the Lean.Studio suite."
+    "longDescription": "LS.Text is a local-first scratchpad and micro-editor. Instant boot, CodeMirror 6, optional folder tree and terminal launcher. Open source (MIT) supporting tool in the Lean.Studio suite.",
+    "fileAssociations": [
+      {
+        "ext": ["txt", "text", "log"],
+        "name": "Plain Text",
+        "description": "Plain text document",
+        "mimeType": "text/plain",
+        "role": "Editor",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["md", "markdown"],
+        "name": "Markdown",
+        "description": "Markdown document",
+        "mimeType": "text/markdown",
+        "role": "Editor",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["json", "jsonc"],
+        "name": "JSON",
+        "mimeType": "application/json",
+        "role": "Editor",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["py", "ts", "tsx", "js", "jsx", "rs", "toml", "yaml", "yml", "css", "html", "env"],
+        "name": "Source Text",
+        "mimeType": "text/plain",
+        "role": "Editor",
+        "rank": "Alternate"
+      }
+    ]
   },
   "plugins": {
     "updater": {
