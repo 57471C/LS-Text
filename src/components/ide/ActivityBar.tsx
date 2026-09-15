@@ -7,6 +7,7 @@ import {
   SquareTerminal,
 } from "lucide-react";
 import { useIde } from "@/lib/ide/store";
+import { newScratchDocument } from "@/lib/ide/windows";
 import { cn, modLabel } from "@/lib/utils";
 
 const items = [
@@ -36,7 +37,7 @@ const items = [
     label: "New scratch",
     shortcut: "N",
     icon: FilePlus,
-    run: (s: ReturnType<typeof useIde.getState>) => s.newScratch(),
+    run: () => void newScratchDocument(),
   },
   {
     id: "terminal",
@@ -90,7 +91,10 @@ export function ActivityBar() {
             title={`${item.label}  ${mod}+${item.shortcut}`}
             aria-label={item.label}
             aria-pressed={active}
-            onClick={() => item.run(useIde.getState())}
+            onClick={() => {
+              if (item.id === "new") item.run(useIde.getState());
+              else item.run(useIde.getState());
+            }}
             className={cn(
               "relative flex size-11 items-center justify-center rounded-md transition-colors duration-150",
               "hover:bg-elevated hover:text-fg",
