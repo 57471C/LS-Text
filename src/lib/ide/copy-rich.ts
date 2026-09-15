@@ -39,6 +39,9 @@ const richHighlighter = tagHighlighter([
   { tag: t.invalid, class: "color:#CD3131" },
 ]);
 
+const LINE =
+  "margin:0;padding:0;line-height:1.35;white-space:pre-wrap;font-family:Consolas,'Courier New',monospace;font-size:10.5pt;color:#000000";
+
 function escapeHtml(text: string) {
   return text
     .replace(/&/g, "&")
@@ -47,9 +50,18 @@ function escapeHtml(text: string) {
 }
 
 function paint(text: string, style: string) {
-  const safe = escapeHtml(text).replace(/\n/g, "<br>\n");
-  if (!style) return safe;
-  return `<span style="${style}">${safe}</span>`;
+  return text.split(/\r?\n/).map((part) => {
+    const safe = escapeHtml(part);
+    if (!style) return safe;
+    return `<span style="${style}">${safe}</span>`;
+  }).join("\n");
+}
+
+function wrapLines(body: string) {
+  return body.split("\n").map((line) => {
+    const inner = line.length ? line : "&nbsp;";
+    return `<div style="${LINE}">${inner}</div>`;
+  }).join("");
 }
 
 function toHtml(state: EditorState, from: number, to: number, plain: string) {
@@ -71,11 +83,7 @@ function toHtml(state: EditorState, from: number, to: number, plain: string) {
   );
   if (pos < to) body += paint(state.sliceDoc(pos, to), "");
   if (!body) body = paint(plain, "");
-  return (
-    `<div style="font-family:Consolas,'Courier New',monospace;font-size:10.5pt;color:#000000;white-space:pre">` +
-    body +
-    `</div>`
-  );
+  return wrapLines(body);
 }
 
 export async function copyRichFromEditor() {
