@@ -27,6 +27,7 @@ const LANGUAGE_LABEL: Record<string, string> = {
   zsh: "Shell",
   env: "Dotenv",
   txt: "Plain Text",
+  sql: "SQL",
 };
 
 export function isEnvName(filename: string) {
@@ -100,6 +101,10 @@ export async function loadLanguage(filename: string): Promise<Extension | null> 
       case "yml": {
         const { yaml } = await import("@codemirror/lang-yaml");
         return yaml();
+      }
+      case "sql": {
+        const { sql, MSSQL } = await import("@codemirror/lang-sql");
+        return sql({ dialect: MSSQL });
       }
       case "toml": {
         const { toml } = await import("@codemirror/legacy-modes/mode/toml");
