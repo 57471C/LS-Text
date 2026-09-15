@@ -19,6 +19,7 @@ function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
   const children = useIde((s) => s.children[entry.path]);
   const activePath = useIde((s) => s.tabs.find((t) => t.id === s.activeTabId)?.path);
   const dirty = useIde((s) => s.tabs.some((t) => t.path === entry.path && isDirty(t)));
+  const theme = useIde((s) => s.settings.theme);
   const known = entry.kind === "file" && isKnownLanguage(entry.name);
   const [menu, setMenu] = useState(false);
 
@@ -68,7 +69,8 @@ function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
           <span
             className={cn(
               "min-w-0 truncate",
-              known && !dirty && "text-[#c6b056]",
+              known && !dirty && theme === "light" && "text-[#7a5a10]",
+              known && !dirty && theme !== "light" && "text-[#c6b056]",
               dirty && "text-fg",
             )}
           >
@@ -76,7 +78,7 @@ function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
           </span>
           {dirty && (
             <span
-              className="ml-auto shrink-0 text-[10px] font-semibold tracking-wide text-[#d29922]"
+              className="ml-auto shrink-0 text-[10px] font-semibold tracking-wide text-[#b07d12]"
               title="Unsaved changes"
             >
               M
