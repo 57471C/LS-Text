@@ -6,7 +6,12 @@ import {
   hasQuitWorthyTabs,
   shouldAllowNativeClose,
 } from "@/lib/ide/quit";
-import { isTauriRuntime, listenOpenFiles } from "@/lib/ide/tauri";
+import {
+  isTauriRuntime,
+  listenNativeFileDrop,
+  listenOpenFiles,
+} from "@/lib/ide/tauri";
+import { TauriDiskFS } from "@/lib/ide/tauri-fs";
 import { initUpdater } from "@/lib/ide/updater";
 import { ActivityBar } from "./ActivityBar";
 import { CommandPalette } from "./CommandPalette";
@@ -33,6 +38,41 @@ async function openIncoming(paths: string[]) {
   }
 }
 
+async function openDroppedOsPaths(paths: string[]) {
+  if (!paths.length) return;
+  try {
+    const { stat } = await import("@tauri-apps/plugin-fs");
+    const files: string[] = [];
+    let folder: string | null = null;
+    for (const path of paths) {
+      try {
+        const info = await stat(path);
+        if (info.isDirectory) {
+          if (!folder) folder = path;
+        } else {
+          files.push(path);
+        }
+      } catch {
+        files.push(path);
+      }
+    }
+    if (folder) {
+      const native = new TauriDiskFS(folder);
+      useIde.setState({
+        fs: native,
+        children: {},
+        expandedDirs: [native.rootPath],
+        terminalCwd: native.rootPath,
+        status: `Opened ${native.name}`,
+      });
+      await useIde.getState().refreshDir(native.rootPath);
+    }
+    await openIncoming(files);
+  } catch {
+    await openIncoming(paths);
+  }
+}
+
 export function IdeShell() {
   const explorerOpen = useIde((s) => s.explorerOpen);
   const [explorerWidth, setExplorerWidth] = useState(240);
@@ -52,6 +92,25 @@ export function IdeShell() {
     let unlisten: (() => void) | undefined;
     void listenOpenFiles((paths) => {
       void openIncoming(paths);
+    }).then((fn) => {
+      if (gone) fn();
+      else unlisten = fn;
+    });
+    return () => {
+      gone = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) return;
+    let gone = false;
+    let unlisten: (() => void) | undefined;
+    void listenNativeFileDrop({
+      onHover: setDropHover,
+      onDrop: (paths) => {
+        void openDroppedOsPaths(paths);
+      },
     }).then((fn) => {
       if (gone) fn();
       else unlisten = fn;
