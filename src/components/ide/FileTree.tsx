@@ -10,6 +10,7 @@ import { FileIcon } from "./FileIcon";
 import { isKnownLanguage } from "@/lib/ide/languages";
 import type { DirEntry } from "@/lib/ide/types";
 import { isDirty, useIde } from "@/lib/ide/store";
+import { openDocument } from "@/lib/ide/windows";
 import { cn } from "@/lib/utils";
 
 const EMPTY: DirEntry[] = [];
@@ -31,7 +32,7 @@ function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
 
   const onOpen = () => {
     if (entry.kind === "dir") void useIde.getState().toggleDir(entry.path);
-    else void useIde.getState().openPath(entry.path);
+    else void openDocument(entry.path);
   };
 
   return (

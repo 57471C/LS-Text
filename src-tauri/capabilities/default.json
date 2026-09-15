@@ -1,14 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "LS-Text default capabilities for the main window",
-  "windows": ["main"],
+  "description": "LS-Text default capabilities",
+  "windows": ["main", "doc-*"],
   "permissions": [
     "core:default",
     "core:path:default",
     "core:window:allow-start-dragging",
     "core:window:allow-close",
     "core:window:allow-destroy",
+    "core:webview:allow-create-webview-window",
     "dialog:default",
     "store:default",
     "shell:allow-open",

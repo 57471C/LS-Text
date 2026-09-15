@@ -28,6 +28,8 @@ export interface EditorSettings {
   lineNumbers?: boolean;
   highlightActiveLine?: boolean;
   highlightSelectionMatches?: boolean;
+  /** One buffer per window. Extra files open a new window on desktop. */
+  oneFilePerWindow?: boolean;
 }
 
 export interface CursorPos {

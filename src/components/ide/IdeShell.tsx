@@ -8,12 +8,14 @@ import {
   shouldAllowNativeClose,
 } from "@/lib/ide/quit";
 import {
+  getLaunchPaths,
   isTauriRuntime,
   listenNativeFileDrop,
   listenOpenFiles,
 } from "@/lib/ide/tauri";
 import { TauriDiskFS } from "@/lib/ide/tauri-fs";
 import { initUpdater } from "@/lib/ide/updater";
+import { hashOpenPath, newScratchDocument, openDocument } from "@/lib/ide/windows";
 import { ActivityBar } from "./ActivityBar";
 import { CommandPalette } from "./CommandPalette";
 import { DragHandle } from "./DragHandle";
@@ -30,13 +32,28 @@ const EXPLORER_COLLAPSE_WIDTH = 800;
 async function openIncoming(paths: string[]) {
   for (const path of paths) {
     try {
-      await useIde.getState().openPath(path);
+      await openDocument(path);
     } catch (err) {
       useIde.setState({
         status: err instanceof Error ? err.message : `Could not open ${path}`,
       });
     }
   }
+  const leftovers = useIde.getState().tabs.filter(
+    (t) => t.isUntitled && t.content === "" && t.content === t.originalContent,
+  );
+  for (const t of leftovers) {
+    if (useIde.getState().tabs.length <= 1) break;
+    useIde.getState().closeTab(t.id, true);
+  }
+}
+
+async function bootFiles() {
+  const argv = await getLaunchPaths();
+  const hashed = hashOpenPath();
+  const paths = [...argv];
+  if (hashed && !paths.includes(hashed)) paths.unshift(hashed);
+  if (paths.length) await openIncoming(paths);
 }
 
 async function openDroppedOsPaths(paths: string[]) {
@@ -83,7 +100,7 @@ export function IdeShell() {
   useLayoutEffect(() => {
     void (async () => {
       await useIde.getState().hydrate();
-      await useIde.getState().openLaunchFiles();
+      await bootFiles();
     })();
   }, []);
 
@@ -209,7 +226,7 @@ export function IdeShell() {
         void useIde.getState().openFolder();
       } else if (k === "n") {
         e.preventDefault();
-        useIde.getState().newScratch();
+        void newScratchDocument();
       } else if (k === "c" && e.shiftKey) {
         e.preventDefault();
         void copyRichFromEditor();

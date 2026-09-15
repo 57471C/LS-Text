@@ -112,6 +112,14 @@ export function SettingsPanel() {
             onChange={() => useIde.getState().togglePreview()}
           />
           <Toggle
+            label="One file per window"
+            hint="Desktop: extra files open a new window instead of a tab"
+            checked={Boolean(settings.oneFilePerWindow)}
+            onChange={(oneFilePerWindow) =>
+              useIde.getState().setSettings({ oneFilePerWindow })
+            }
+          />
+          <Toggle
             label="Auto-save"
             hint="Writes named files after 500ms"
             checked={settings.autoSave}
