@@ -1,4 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
+import type { EditorState } from "@codemirror/state";
 import { highlightTree, tagHighlighter, tags as t } from "@lezer/highlight";
 import { getEditorView } from "./base64";
 import { useIde } from "./store";
@@ -51,31 +52,24 @@ function paint(text: string, style: string) {
   return `<span style="${style}">${safe}</span>`;
 }
 
-export function selectionToRichHtml(plain: string, state: {
-  doc: { sliceString: (from: number, to: number) => string };
-  selection: { main: { empty: boolean; from: number; to: number } };
-}): string {
-  const viewState = state as unknown as import("@codemirror/state").EditorState;
-  const main = viewState.selection.main;
-  const from = main.empty ? 0 : main.from;
-  const to = main.empty ? viewState.doc.length : main.to;
+function toHtml(state: EditorState, from: number, to: number, plain: string) {
   let pos = from;
   let body = "";
   highlightTree(
-    syntaxTree(viewState),
+    syntaxTree(state),
     richHighlighter,
     (a, b, style) => {
       const start = Math.max(a, from);
       const end = Math.min(b, to);
       if (end <= start) return;
-      if (start > pos) body += paint(viewState.sliceDoc(pos, start), "");
-      body += paint(viewState.sliceDoc(start, end), style);
+      if (start > pos) body += paint(state.sliceDoc(pos, start), "");
+      body += paint(state.sliceDoc(start, end), style);
       pos = end;
     },
     from,
     to,
   );
-  if (pos < to) body += paint(viewState.sliceDoc(pos, to), "");
+  if (pos < to) body += paint(state.sliceDoc(pos, to), "");
   if (!body) body = paint(plain, "");
   return (
     `<div style="font-family:Consolas,'Courier New',monospace;font-size:10.5pt;color:#000000;white-space:pre">` +
@@ -98,7 +92,7 @@ export async function copyRichFromEditor() {
     useIde.setState({ status: "Nothing to copy" });
     return;
   }
-  const html = selectionToRichHtml(plain, view.state);
+  const html = toHtml(view.state, from, to, plain);
   try {
     await navigator.clipboard.write([
       new ClipboardItem({
