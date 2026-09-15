@@ -1,37 +1,18 @@
 import type { ReactNode } from "react";
 import {
   ChevronRight,
-  FileCode,
-  FileJson,
-  FileText,
-  Folder,
-  FolderOpen,
   FolderPlus,
   FilePlus,
   MoreHorizontal,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { FileIcon } from "./FileIcon";
 import { isKnownLanguage } from "@/lib/ide/languages";
 import type { DirEntry } from "@/lib/ide/types";
 import { isDirty, useIde } from "@/lib/ide/store";
-import { cn, extname } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const EMPTY: DirEntry[] = [];
-
-function FileGlyph({ name, kind, open }: { name: string; kind: "file" | "dir"; open?: boolean }) {
-  if (kind === "dir") {
-    const Icon = open ? FolderOpen : Folder;
-    return <Icon className="size-3.5 shrink-0 text-muted" strokeWidth={1.6} />;
-  }
-  const ext = extname(name);
-  if (["json", "toml", "yaml", "yml"].includes(ext)) {
-    return <FileJson className="size-3.5 shrink-0 text-muted" strokeWidth={1.6} />;
-  }
-  if (["rs", "ts", "tsx", "js", "jsx", "py", "css", "html", "sh", "sql"].includes(ext)) {
-    return <FileCode className="size-3.5 shrink-0 text-muted" strokeWidth={1.6} />;
-  }
-  return <FileText className="size-3.5 shrink-0 text-muted" strokeWidth={1.6} />;
-}
 
 function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
   const expanded = useIde((s) => s.expandedDirs.includes(entry.path));
@@ -83,7 +64,7 @@ function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
           ) : (
             <span className="inline-block w-3" />
           )}
-          <FileGlyph name={entry.name} kind={entry.kind} open={expanded} />
+          <FileIcon name={entry.name} kind={entry.kind} open={expanded} />
           <span
             className={cn(
               "min-w-0 truncate",
