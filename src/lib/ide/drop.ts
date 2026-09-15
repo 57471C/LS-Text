@@ -8,14 +8,50 @@ const MAX_FILES = 80;
 const MAX_BYTES = 1_500_000;
 const MAX_DEPTH = 8;
 
+const TEXT_EXT = new Set([
+  "txt",
+  "text",
+  "log",
+  "md",
+  "markdown",
+  "json",
+  "jsonc",
+  "sql",
+  "py",
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "mjs",
+  "cjs",
+  "rs",
+  "toml",
+  "yaml",
+  "yml",
+  "css",
+  "scss",
+  "html",
+  "htm",
+  "env",
+  "sh",
+  "bash",
+  "zsh",
+]);
+
 function skipName(name: string) {
   const n = name.toLowerCase();
   return SKIP.has(n) || n.endsWith(".app");
 }
 
-function looksBinary(type: string, text: string) {
+function extOf(name: string) {
+  const i = name.lastIndexOf(".");
+  return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
+}
+
+function looksBinary(type: string, name: string, text: string) {
+  if (TEXT_EXT.has(extOf(name))) return text.includes("\0");
   if (/^(image|audio|video|font)\//.test(type)) return true;
-  if (/application\/(pdf|zip|octet-stream)/.test(type)) return true;
+  if (/application\/(pdf|zip)\b/.test(type)) return true;
   return text.includes("\0");
 }
 
@@ -86,7 +122,7 @@ async function fileToDropped(file: File, relativePath: string): Promise<DroppedF
   if (skipName(file.name) || file.size > MAX_BYTES) return null;
   try {
     const text = await file.text();
-    if (looksBinary(file.type, text.slice(0, 4096))) return null;
+    if (looksBinary(file.type, file.name, text.slice(0, 4096))) return null;
     return { relativePath: relativePath.replace(/^\/+/, ""), text };
   } catch {
     return null;
