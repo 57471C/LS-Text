@@ -8,6 +8,10 @@ export function bindEditorView(next: EditorView | null) {
   view = next;
 }
 
+export function getEditorView() {
+  return view;
+}
+
 function looksLikeBase64(raw: string) {
   const t = raw.replace(/\s+/g, "");
   if (t.length < 8 || t.length % 4 !== 0) return false;
