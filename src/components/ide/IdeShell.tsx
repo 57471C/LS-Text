@@ -6,7 +6,7 @@ import {
   hasQuitWorthyTabs,
   shouldAllowNativeClose,
 } from "@/lib/ide/quit";
-import { isTauriRuntime } from "@/lib/ide/tauri";
+import { isTauriRuntime, listenOpenFiles } from "@/lib/ide/tauri";
 import { initUpdater } from "@/lib/ide/updater";
 import { ActivityBar } from "./ActivityBar";
 import { CommandPalette } from "./CommandPalette";
@@ -21,6 +21,18 @@ import { TabBar } from "./TabBar";
 
 const EXPLORER_COLLAPSE_WIDTH = 800;
 
+async function openIncoming(paths: string[]) {
+  for (const path of paths) {
+    try {
+      await useIde.getState().openPath(path);
+    } catch (err) {
+      useIde.setState({
+        status: err instanceof Error ? err.message : `Could not open ${path}`,
+      });
+    }
+  }
+}
+
 export function IdeShell() {
   const explorerOpen = useIde((s) => s.explorerOpen);
   const [explorerWidth, setExplorerWidth] = useState(240);
@@ -32,6 +44,22 @@ export function IdeShell() {
       await useIde.getState().hydrate();
       await useIde.getState().openLaunchFiles();
     })();
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) return;
+    let gone = false;
+    let unlisten: (() => void) | undefined;
+    void listenOpenFiles((paths) => {
+      void openIncoming(paths);
+    }).then((fn) => {
+      if (gone) fn();
+      else unlisten = fn;
+    });
+    return () => {
+      gone = true;
+      unlisten?.();
+    };
   }, []);
 
   useEffect(() => {
