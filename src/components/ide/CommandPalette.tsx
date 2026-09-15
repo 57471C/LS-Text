@@ -1,6 +1,7 @@
 import { Command } from "cmdk";
 import { useEffect, useState } from "react";
 import { toggleBase64InEditor } from "@/lib/ide/base64";
+import { copyRichFromEditor } from "@/lib/ide/copy-rich";
 import { useIde } from "@/lib/ide/store";
 import { checkForUpdatesNow } from "@/lib/ide/updater";
 import { basename, modLabel } from "@/lib/utils";
@@ -35,6 +36,7 @@ export function CommandPalette() {
     { id: "new", label: "New scratch buffer", hint: `${mod}+N`, run: () => useIde.getState().newScratch() },
     { id: "open", label: "Open folder", hint: `${mod}+O`, run: () => void useIde.getState().openFolder() },
     { id: "save", label: "Save file", hint: `${mod}+S`, run: () => void useIde.getState().saveTab() },
+    { id: "copy-rich", label: "Copy with highlighting", hint: `${mod}+Shift+C`, run: () => void copyRichFromEditor() },
     { id: "term", label: "Open external terminal", hint: `${mod}+\``, run: () => void useIde.getState().launchTerminal() },
     { id: "explorer", label: "Toggle explorer", hint: `${mod}+B`, run: () => useIde.getState().toggleExplorer() },
     { id: "goto", label: "Go to line", hint: `${mod}+G`, run: () => useIde.getState().openGoto() },
