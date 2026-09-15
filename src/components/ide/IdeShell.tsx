@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toggleBase64InEditor } from "@/lib/ide/base64";
+import { copyRichFromEditor } from "@/lib/ide/copy-rich";
 import { useIde } from "@/lib/ide/store";
 import {
   forceNativeClose,
@@ -209,6 +210,9 @@ export function IdeShell() {
       } else if (k === "n") {
         e.preventDefault();
         useIde.getState().newScratch();
+      } else if (k === "c" && e.shiftKey) {
+        e.preventDefault();
+        void copyRichFromEditor();
       } else if (k === "b" && e.shiftKey) {
         e.preventDefault();
         toggleBase64InEditor();
