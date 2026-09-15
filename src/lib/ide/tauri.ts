@@ -47,3 +47,22 @@ export async function listenOpenFiles(
   });
   return unlisten;
 }
+
+export async function listenNativeFileDrop(handlers: {
+  onHover?: (hover: boolean) => void;
+  onDrop: (paths: string[]) => void;
+}): Promise<() => void> {
+  if (!isTauriRuntime()) return () => {};
+  const { getCurrentWebview } = await import("@tauri-apps/api/webview");
+  const unlisten = await getCurrentWebview().onDragDropEvent((event) => {
+    const kind = event.payload.type;
+    if (kind === "enter" || kind === "over") handlers.onHover?.(true);
+    else if (kind === "leave") handlers.onHover?.(false);
+    else if (kind === "drop") {
+      handlers.onHover?.(false);
+      const paths = event.payload.paths ?? [];
+      if (paths.length) handlers.onDrop(paths);
+    }
+  });
+  return unlisten;
+}
