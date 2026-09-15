@@ -10,27 +10,35 @@ import { useIde } from "@/lib/ide/store";
 import { newScratchDocument } from "@/lib/ide/windows";
 import { cn, modLabel } from "@/lib/utils";
 
-const items = [
+type Ide = ReturnType<typeof useIde.getState>;
+
+const items: {
+  id: string;
+  label: string;
+  shortcut: string;
+  icon: typeof PanelLeft;
+  run: (s: Ide) => void;
+}[] = [
   {
     id: "explorer",
     label: "Explorer",
     shortcut: "B",
     icon: PanelLeft,
-    run: (s: ReturnType<typeof useIde.getState>) => s.toggleExplorer(),
+    run: (s) => s.toggleExplorer(),
   },
   {
     id: "search",
     label: "Search workspace",
     shortcut: "Shift+F",
     icon: Search,
-    run: (s: ReturnType<typeof useIde.getState>) => s.toggleSearch(),
+    run: (s) => s.toggleSearch(),
   },
   {
     id: "open",
     label: "Open folder",
     shortcut: "O",
     icon: FolderOpen,
-    run: (s: ReturnType<typeof useIde.getState>) => void s.openFolder(),
+    run: (s) => void s.openFolder(),
   },
   {
     id: "new",
@@ -44,16 +52,16 @@ const items = [
     label: "External terminal",
     shortcut: "`",
     icon: SquareTerminal,
-    run: (s: ReturnType<typeof useIde.getState>) => void s.launchTerminal(),
+    run: (s) => void s.launchTerminal(),
   },
   {
     id: "settings",
     label: "Settings",
     shortcut: ",",
     icon: Settings,
-    run: (s: ReturnType<typeof useIde.getState>) => s.toggleSettings(),
+    run: (s) => s.toggleSettings(),
   },
-] as const;
+];
 
 export function ActivityBar() {
   const explorerOpen = useIde((s) => s.explorerOpen);
@@ -91,10 +99,7 @@ export function ActivityBar() {
             title={`${item.label}  ${mod}+${item.shortcut}`}
             aria-label={item.label}
             aria-pressed={active}
-            onClick={() => {
-              if (item.id === "new") item.run(useIde.getState());
-              else item.run(useIde.getState());
-            }}
+            onClick={() => item.run(useIde.getState())}
             className={cn(
               "relative flex size-11 items-center justify-center rounded-md transition-colors duration-150",
               "hover:bg-elevated hover:text-fg",
