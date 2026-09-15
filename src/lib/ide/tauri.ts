@@ -35,3 +35,15 @@ export async function getLaunchPaths(): Promise<string[]> {
   const paths = await invoke<string[]>("launch_paths");
   return Array.isArray(paths) ? paths : [];
 }
+
+export async function listenOpenFiles(
+  onPaths: (paths: string[]) => void,
+): Promise<() => void> {
+  if (!isTauriRuntime()) return () => {};
+  const { listen } = await import("@tauri-apps/api/event");
+  const unlisten = await listen<string[]>("open-files", (event) => {
+    const paths = Array.isArray(event.payload) ? event.payload : [];
+    if (paths.length) onPaths(paths);
+  });
+  return unlisten;
+}
