@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { isKnownLanguage } from "@/lib/ide/languages";
 import type { DirEntry } from "@/lib/ide/types";
 import { isDirty, useIde } from "@/lib/ide/store";
 import { cn, extname } from "@/lib/utils";
@@ -26,7 +27,7 @@ function FileGlyph({ name, kind, open }: { name: string; kind: "file" | "dir"; o
   if (["json", "toml", "yaml", "yml"].includes(ext)) {
     return <FileJson className="size-3.5 shrink-0 text-muted" strokeWidth={1.6} />;
   }
-  if (["rs", "ts", "tsx", "js", "jsx", "py", "css", "html", "sh"].includes(ext)) {
+  if (["rs", "ts", "tsx", "js", "jsx", "py", "css", "html", "sh", "sql"].includes(ext)) {
     return <FileCode className="size-3.5 shrink-0 text-muted" strokeWidth={1.6} />;
   }
   return <FileText className="size-3.5 shrink-0 text-muted" strokeWidth={1.6} />;
@@ -37,6 +38,7 @@ function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
   const children = useIde((s) => s.children[entry.path]);
   const activePath = useIde((s) => s.tabs.find((t) => t.id === s.activeTabId)?.path);
   const dirty = useIde((s) => s.tabs.some((t) => t.path === entry.path && isDirty(t)));
+  const known = entry.kind === "file" && isKnownLanguage(entry.name);
   const [menu, setMenu] = useState(false);
 
   useEffect(() => {
@@ -82,9 +84,22 @@ function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
             <span className="inline-block w-3" />
           )}
           <FileGlyph name={entry.name} kind={entry.kind} open={expanded} />
-          <span className="min-w-0 truncate">{entry.name}</span>
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              known && !dirty && "text-[#c6b056]",
+              dirty && "text-fg",
+            )}
+          >
+            {entry.name}
+          </span>
           {dirty && (
-            <span className="ml-auto size-1.5 shrink-0 rounded-full bg-accent" title="Unsaved" />
+            <span
+              className="ml-auto shrink-0 text-[10px] font-semibold tracking-wide text-[#d29922]"
+              title="Unsaved changes"
+            >
+              M
+            </span>
           )}
         </button>
         <button
