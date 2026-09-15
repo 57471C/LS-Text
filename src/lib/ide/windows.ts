@@ -1,4 +1,5 @@
 import { basename } from "@/lib/utils";
+import { useIde } from "./store";
 import { isTauriRuntime } from "./tauri";
 import type { Tab } from "./types";
 
@@ -31,4 +32,27 @@ export async function openFileInNewWindow(path: string | null): Promise<boolean>
     focus: true,
   });
   return true;
+}
+
+export async function openDocument(path: string) {
+  const s = useIde.getState();
+  const existing = s.tabs.find((t) => t.path === path);
+  if (existing) {
+    s.setActiveTab(existing.id);
+    return;
+  }
+  if (s.settings.oneFilePerWindow && isTauriRuntime() && !bufferIsVacant(s.tabs)) {
+    const spawned = await openFileInNewWindow(path);
+    if (spawned) return;
+  }
+  await s.openPath(path);
+}
+
+export async function newScratchDocument() {
+  const s = useIde.getState();
+  if (s.settings.oneFilePerWindow && isTauriRuntime() && !bufferIsVacant(s.tabs)) {
+    const spawned = await openFileInNewWindow(null);
+    if (spawned) return;
+  }
+  s.newScratch();
 }
