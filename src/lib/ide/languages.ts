@@ -28,6 +28,8 @@ const LANGUAGE_LABEL: Record<string, string> = {
   env: "Dotenv",
   txt: "Plain Text",
   sql: "SQL",
+  log: "Plain Text",
+  text: "Plain Text",
 };
 
 export function isEnvName(filename: string) {
@@ -42,6 +44,12 @@ export function isEnvName(filename: string) {
 
 export function isPythonName(filename: string) {
   return extname(filename) === "py";
+}
+
+export function isKnownLanguage(filename: string) {
+  if (isEnvName(filename)) return true;
+  const ext = extname(filename);
+  return Boolean(ext && LANGUAGE_LABEL[ext]);
 }
 
 export function languageLabel(filename: string) {
