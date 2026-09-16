@@ -10,7 +10,7 @@ export function TabBar() {
   const oneFile = useIde((s) => Boolean(s.settings.oneFilePerWindow));
   const active = tabs.find((t) => t.id === activeTabId);
   const activeName = active?.name ?? "";
-  const md = isMarkdownName(activeName);
+  const md = isMarkdownName(activeName) || active?.language === "Markdown";
   const mod = modLabel();
   const dirty = active ? isDirty(active) : false;
 
