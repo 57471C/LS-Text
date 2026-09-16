@@ -65,3 +65,15 @@ describe('renderMarkdown tables and tasks', () => {
     expect(html).toContain('text-align:right');
   });
 });
+
+describe('renderMarkdown inline extras', () => {
+  it('renders ==highlight== as mark', () => {
+    const html = renderMarkdown('Note ==important== bit');
+    expect(html).toContain('<mark>important</mark>');
+  });
+
+  it('renders __bold__ as strong', () => {
+    const html = renderMarkdown('say __hello__');
+    expect(html).toContain('<strong>hello</strong>');
+  });
+});
