@@ -18,11 +18,18 @@ function looksLikeBase64(raw: string) {
   return /^[A-Za-z0-9+/]+={0,2}$/.test(t);
 }
 
+export function bytesToBase64(bytes: Uint8Array): string {
+  let bin = "";
+  const chunkSize = 16384;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize) as unknown as number[]);
+  }
+  return btoa(bin);
+}
+
 function encodeUtf8(text: string) {
   const bytes = new TextEncoder().encode(text);
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin);
+  return bytesToBase64(bytes);
 }
 
 function decodeUtf8(raw: string) {
