@@ -58,18 +58,32 @@ export async function searchWorkspace(
   }
 
   const files = (await listAll()).slice(0, MAX_FILES);
-  for (const path of files) {
-    if (seen.has(path)) continue;
-    try {
-      const content = await read(path);
-      hits.push(...scanContent(path, content, q, caseSensitive));
-    } catch (err) {
-      console.warn(`[Search] Failed to read ${path}:`, err);
-      const w = window as unknown as { showToast?: (msg: string, t: string) => void };
-      if (typeof w.showToast === "function") {
-        w.showToast(`Search skipped unreadable file: ${basename(path)}`, "error");
+
+  const CHUNK_SIZE = 20;
+  for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+    const chunk = files.slice(i, i + CHUNK_SIZE);
+    const promises = chunk.map(async (path) => {
+      if (seen.has(path)) return;
+      try {
+        const content = await read(path);
+        return { path, content };
+      } catch (err) {
+        console.warn(`[Search] Failed to read ${path}:`, err);
+        const w = window as unknown as { showToast?: (msg: string, t: string) => void };
+        if (typeof w.showToast === "function") {
+          w.showToast(`Search skipped unreadable file: ${basename(path)}`, "error");
+        }
+        return undefined;
       }
+    });
+
+    const results = await Promise.all(promises);
+    for (const result of results) {
+      if (!result) continue;
+      hits.push(...scanContent(result.path, result.content, q, caseSensitive));
+      if (hits.length >= MAX_HITS) break;
     }
+
     if (hits.length >= MAX_HITS) break;
   }
   return hits.slice(0, MAX_HITS);
