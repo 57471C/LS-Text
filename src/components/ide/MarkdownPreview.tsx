@@ -1,5 +1,6 @@
 import { type RefObject, useMemo } from "react";
 import { renderMarkdown } from "@/lib/ide/markdown";
+import { toggleTaskAt } from "@/lib/ide/markdown-task";
 
 export function MarkdownPreview({
   content,
@@ -21,6 +22,15 @@ export function MarkdownPreview({
       <div
         ref={scrollRef}
         className="md-preview min-h-0 flex-1 overflow-auto px-5 pt-4 pb-8 md:px-6 md:pt-5"
+        onClick={(e) => {
+          const t = e.target;
+          if (!(t instanceof HTMLInputElement) || t.type !== "checkbox") return;
+          e.preventDefault();
+          const line = Number(t.dataset.taskLine);
+          const index = Number(t.dataset.taskI);
+          if (!Number.isFinite(line) || !Number.isFinite(index)) return;
+          toggleTaskAt(line, index);
+        }}
       >
         {empty ? (
           <p className="text-sm text-subtle">Nothing to preview yet.</p>
