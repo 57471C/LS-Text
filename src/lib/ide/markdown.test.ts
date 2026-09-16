@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderMarkdown } from './markdown';
+import { toggleTaskInLine } from './markdown-task';
 
 describe('renderMarkdown heading rendering', () => {
   it('renders a level 1 heading', () => {
@@ -54,6 +55,7 @@ describe('renderMarkdown tables and tasks', () => {
     const html = renderMarkdown(markdown);
     expect(html).toContain('type="checkbox"');
     expect(html).toContain('checked');
+    expect(html).toContain('data-task-line="3"');
     expect(html).toContain('Terry');
     expect(html).not.toContain('[x]');
   });
@@ -75,5 +77,12 @@ describe('renderMarkdown inline extras', () => {
   it('renders __bold__ as strong', () => {
     const html = renderMarkdown('say __hello__');
     expect(html).toContain('<strong>hello</strong>');
+  });
+});
+
+describe('toggleTaskInLine', () => {
+  it('flips the nth task marker', () => {
+    expect(toggleTaskInLine('| [x] Terry | [ ] Tracy |', 0)?.insert).toBe('[ ]');
+    expect(toggleTaskInLine('| [x] Terry | [ ] Tracy |', 1)?.insert).toBe('[x]');
   });
 });
