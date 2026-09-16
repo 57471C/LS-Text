@@ -298,10 +298,18 @@
 .md-preview ul,
 .md-preview ol {
   margin: 0 0 1rem;
-  padding-left: 1.25rem;
+  padding-left: 1.6rem;
+  list-style-position: outside;
+}
+.md-preview ul {
+  list-style-type: disc;
+}
+.md-preview ol {
+  list-style-type: decimal;
 }
 .md-preview li {
   margin: 0.2rem 0;
+  display: list-item;
 }
 .md-preview blockquote {
   border-left: 2px solid var(--color-border-strong);
