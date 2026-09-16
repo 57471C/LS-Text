@@ -34,6 +34,7 @@ import { useEffect, useRef, useState } from "react";
 import { DragHandle } from "./DragHandle";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { bindEditorView } from "@/lib/ide/base64";
+import { fileForLanguage } from "@/lib/ide/language-mode";
 import { isPythonName, loadLanguage } from "@/lib/ide/languages";
 import { isMarkdownName } from "@/lib/ide/markdown";
 import { bindMarkdownScroll, scrollPreviewToLine } from "@/lib/ide/scroll-sync";
@@ -168,6 +169,10 @@ export function EditorPane() {
 
   const tabId = useIde((s) => s.activeTabId);
   const tabName = useIde((s) => s.tabs.find((t) => t.id === s.activeTabId)?.name ?? "");
+  const tabLanguage = useIde(
+    (s) => s.tabs.find((t) => t.id === s.activeTabId)?.language ?? "Plain Text",
+  );
+  const modeName = fileForLanguage(tabLanguage, tabName);
   const content = useIde(
     (s) => s.tabs.find((t) => t.id === s.activeTabId)?.content ?? "",
   );
@@ -175,7 +180,7 @@ export function EditorPane() {
   const settings = useIde((s) => s.settings);
   const previewOpen = useIde((s) => s.previewOpen);
   const reveal = useIde((s) => s.reveal);
-  const showPreview = previewOpen && isMarkdownName(tabName);
+  const showPreview = previewOpen && isMarkdownName(modeName);
 
   useEffect(() => {
     if (!parentRef.current) return;
@@ -208,21 +213,22 @@ export function EditorPane() {
     const cached = statesRef.current.get(tabId);
     const tab = useIde.getState().tabs.find((t) => t.id === tabId);
     if (!tab) return;
+    const file = fileForLanguage(tab.language, tab.name);
 
     if (cached) {
       view.setState(cached);
     } else {
       const state = EditorState.create({
         doc: tab.content,
-        extensions: buildExtensions(tab.id, useIde.getState().settings, tab.name),
+        extensions: buildExtensions(tab.id, useIde.getState().settings, file),
       });
       statesRef.current.set(tab.id, state);
       view.setState(state);
     }
     currentId.current = tabId;
-    applyEditorSettings(view, useIde.getState().settings, tab.name);
+    applyEditorSettings(view, useIde.getState().settings, file);
     syncEditorMeta(view);
-    void loadLanguage(tab.name).then((lang) => {
+    void loadLanguage(file).then((lang) => {
       const v = viewRef.current;
       if (!v || currentId.current !== tabId) return;
       v.dispatch({ effects: langConf.reconfigure(lang ?? []) });
@@ -252,20 +258,20 @@ export function EditorPane() {
   useEffect(() => {
     const view = viewRef.current;
     if (!view || !tabId) return;
-    void loadLanguage(tabName).then((lang) => {
+    void loadLanguage(modeName).then((lang) => {
       const v = viewRef.current;
       if (!v || currentId.current !== tabId) return;
       v.dispatch({ effects: langConf.reconfigure(lang ?? []) });
     });
-    applyEditorSettings(view, useIde.getState().settings, tabName);
-  }, [tabName, tabId]);
+    applyEditorSettings(view, useIde.getState().settings, modeName);
+  }, [tabName, tabLanguage, tabId, modeName]);
 
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    applyEditorSettings(view, settings, tabName);
+    applyEditorSettings(view, settings, modeName);
   }, [
-    tabName,
+    modeName,
     settings.wordWrap,
     settings.tabSize,
     settings.theme,
