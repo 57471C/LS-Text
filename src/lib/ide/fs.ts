@@ -100,10 +100,10 @@ export class VirtualFileSystem implements FileSystemAdapter {
     this.files.delete(p);
     this.dirs.delete(p);
     const prefix = p + "/";
-    for (const f of [...this.files.keys()]) {
+    for (const f of this.files.keys()) {
       if (f.startsWith(prefix)) this.files.delete(f);
     }
-    for (const d of [...this.dirs]) {
+    for (const d of this.dirs) {
       if (d.startsWith(prefix)) this.dirs.delete(d);
     }
   }
