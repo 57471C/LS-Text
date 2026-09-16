@@ -96,19 +96,16 @@ function inline(src: string): string {
   return out;
 }
 
-function taskPrefix(src: string) {
-  const m = /^\[([ xX])\]\s+/.exec(src);
-  if (!m) return { html: "", rest: src };
-  const on = m[1] !== " ";
-  return {
-    html: `<input type="checkbox" disabled${on ? " checked" : ""}> `,
-    rest: src.slice(m[0].length),
+function richFor(line: number) {
+  let i = 0;
+  return (src: string) => {
+    const m = /^\[([ xX])\]\s+/.exec(src);
+    if (!m) return inline(src);
+    const on = m[1] !== " ";
+    const html = `<input type="checkbox" class="md-task"${on ? " checked" : ""} data-task-line="${line}" data-task-i="${i}"> `;
+    i += 1;
+    return html + inline(src.slice(m[0].length));
   };
-}
-
-function rich(src: string) {
-  const t = taskPrefix(src);
-  return t.html + inline(t.rest);
 }
 
 function isFence(s: string) {
@@ -202,20 +199,24 @@ export function renderMarkdown(src: string): string {
     if (isTableRow(raw) && i + 1 < lines.length && isSepRow(lines[i + 1] ?? "")) {
       const header = splitRow(raw);
       const align = splitRow(lines[i + 1] ?? "").map(colAlign);
+      const headerRich = richFor(start);
       i += 2;
-      const rows: string[][] = [];
+      const rows: { line: number; cells: string[] }[] = [];
       while (i < lines.length && isTableRow(lines[i] ?? "")) {
-        rows.push(splitRow(lines[i] ?? ""));
+        rows.push({ line: i + 1, cells: splitRow(lines[i] ?? "") });
         i += 1;
       }
-      const cell = (text: string, idx: number, tag: "th" | "td") => {
+      const cell = (text: string, idx: number, tag: "th" | "td", paint: (s: string) => string) => {
         const a = align[idx] ?? "left";
         const style = a === "left" ? "" : ` style="text-align:${a}"`;
-        return `<${tag}${style}>${rich(text)}</${tag}>`;
+        return `<${tag}${style}>${paint(text)}</${tag}>`;
       };
-      const thead = `<tr>${header.map((c, idx) => cell(c, idx, "th")).join("")}</tr>`;
+      const thead = `<tr>${header.map((c, idx) => cell(c, idx, "th", headerRich)).join("")}</tr>`;
       const tbody = rows
-        .map((r) => `<tr>${header.map((_, idx) => cell(r[idx] ?? "", idx, "td")).join("")}</tr>`)
+        .map((r) => {
+          const paint = richFor(r.line);
+          return `<tr>${header.map((_, idx) => cell(r.cells[idx] ?? "", idx, "td", paint)).join("")}</tr>`;
+        })
         .join("");
       out.push(wrap(start, `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`));
       continue;
@@ -227,7 +228,7 @@ export function renderMarkdown(src: string): string {
         body.push((lines[i] ?? "").replace(/^>\s?/, ""));
         i += 1;
       }
-      out.push(wrap(start, `<blockquote><p>${rich(body.join(" "))}</p></blockquote>`));
+      out.push(wrap(start, `<blockquote><p>${richFor(start)(body.join(" "))}</p></blockquote>`));
       continue;
     }
 
@@ -243,7 +244,7 @@ export function renderMarkdown(src: string): string {
       }
       const tag = ordered ? "ol" : "ul";
       const lis = items
-        .map((it) => `<li data-line="${it.line}">${rich(it.text)}</li>`)
+        .map((it) => `<li data-line="${it.line}">${richFor(it.line)(it.text)}</li>`)
         .join("");
       out.push(wrap(start, `<${tag}>${lis}</${tag}>`));
       continue;
@@ -265,7 +266,7 @@ export function renderMarkdown(src: string): string {
       para.push(lines[i] ?? "");
       i += 1;
     }
-    out.push(wrap(start, `<p>${rich(para.join(" "))}</p>`));
+    out.push(wrap(start, `<p>${richFor(start)(para.join(" "))}</p>`));
   }
 
   return out.join("");
