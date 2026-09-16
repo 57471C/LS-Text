@@ -266,10 +266,23 @@
   color: var(--color-muted);
   font-weight: 500;
 }
-.md-preview input[type="checkbox"] {
-  margin-right: 0.4em;
-  vertical-align: -2px;
-  accent-color: var(--color-accent);
+.md-preview input.md-task {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.95em;
+  height: 0.95em;
+  margin: 0 0.45em 0 0;
+  vertical-align: -0.15em;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 3px;
+  background: var(--color-bg);
+  cursor: pointer;
+}
+.md-preview input.md-task:checked {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M2.5 6.2 5 8.7 9.5 3.5'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
 }
 .md-preview mark {
   background: color-mix(in oklab, #d4b106 42%, transparent);
