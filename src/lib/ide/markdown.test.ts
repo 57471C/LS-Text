@@ -46,3 +46,22 @@ describe('renderMarkdown heading rendering', () => {
     expect(html).toBe('<div class="md-block" data-line="1"><p>####### Too many hashes</p></div>');
   });
 });
+
+describe('renderMarkdown tables and tasks', () => {
+  it('renders GFM task boxes inside table cells', () => {
+    const markdown =
+      '| A | B |\n| --- | --- |\n| [x] Terry | [ ] Tracy |';
+    const html = renderMarkdown(markdown);
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain('checked');
+    expect(html).toContain('Terry');
+    expect(html).not.toContain('[x]');
+  });
+
+  it('honours table alignment from the separator row', () => {
+    const markdown = '| L | C | R |\n| :--- | :---: | ---: |\n| a | b | c |';
+    const html = renderMarkdown(markdown);
+    expect(html).toContain('text-align:center');
+    expect(html).toContain('text-align:right');
+  });
+});
