@@ -80,6 +80,21 @@ function inline(src: string): string {
   return out;
 }
 
+function taskPrefix(src: string) {
+  const m = /^\[([ xX])\]\s+/.exec(src);
+  if (!m) return { html: "", rest: src };
+  const on = m[1] !== " ";
+  return {
+    html: `<input type="checkbox" disabled${on ? " checked" : ""}> `,
+    rest: src.slice(m[0].length),
+  };
+}
+
+function rich(src: string) {
+  const t = taskPrefix(src);
+  return t.html + inline(t.rest);
+}
+
 function isFence(s: string) {
   return s.startsWith("```");
 }
@@ -103,6 +118,24 @@ function isTableRow(s: string) {
 }
 function isSepRow(s: string) {
   return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(s);
+}
+
+function splitRow(row: string) {
+  return row
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((c) => c.trim());
+}
+
+function colAlign(cell: string): "left" | "center" | "right" {
+  const t = cell.replace(/\s/g, "");
+  const left = t.startsWith(":");
+  const right = t.endsWith(":");
+  if (left && right) return "center";
+  if (right) return "right";
+  return "left";
 }
 
 function wrap(line: number, html: string) {
@@ -151,26 +184,22 @@ export function renderMarkdown(src: string): string {
     }
 
     if (isTableRow(raw) && i + 1 < lines.length && isSepRow(lines[i + 1] ?? "")) {
-      const split = (row: string) =>
-        row
-          .trim()
-          .replace(/^\|/, "")
-          .replace(/\|$/, "")
-          .split("|")
-          .map((c) => c.trim());
-      const header = split(raw);
+      const header = splitRow(raw);
+      const align = splitRow(lines[i + 1] ?? "").map(colAlign);
       i += 2;
       const rows: string[][] = [];
       while (i < lines.length && isTableRow(lines[i] ?? "")) {
-        rows.push(split(lines[i] ?? ""));
+        rows.push(splitRow(lines[i] ?? ""));
         i += 1;
       }
-      const thead = `<tr>${header.map((c) => `<th>${inline(c)}</th>`).join("")}</tr>`;
+      const cell = (text: string, idx: number, tag: "th" | "td") => {
+        const a = align[idx] ?? "left";
+        const style = a === "left" ? "" : ` style="text-align:${a}"`;
+        return `<${tag}${style}>${rich(text)}</${tag}>`;
+      };
+      const thead = `<tr>${header.map((c, idx) => cell(c, idx, "th")).join("")}</tr>`;
       const tbody = rows
-        .map(
-          (r) =>
-            `<tr>${header.map((_, idx) => `<td>${inline(r[idx] ?? "")}</td>`).join("")}</tr>`,
-        )
+        .map((r) => `<tr>${header.map((_, idx) => cell(r[idx] ?? "", idx, "td")).join("")}</tr>`)
         .join("");
       out.push(wrap(start, `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`));
       continue;
@@ -182,7 +211,7 @@ export function renderMarkdown(src: string): string {
         body.push((lines[i] ?? "").replace(/^>\s?/, ""));
         i += 1;
       }
-      out.push(wrap(start, `<blockquote><p>${inline(body.join(" "))}</p></blockquote>`));
+      out.push(wrap(start, `<blockquote><p>${rich(body.join(" "))}</p></blockquote>`));
       continue;
     }
 
@@ -198,7 +227,7 @@ export function renderMarkdown(src: string): string {
       }
       const tag = ordered ? "ol" : "ul";
       const lis = items
-        .map((it) => `<li data-line="${it.line}">${inline(it.text)}</li>`)
+        .map((it) => `<li data-line="${it.line}">${rich(it.text)}</li>`)
         .join("");
       out.push(wrap(start, `<${tag}>${lis}</${tag}>`));
       continue;
@@ -220,7 +249,7 @@ export function renderMarkdown(src: string): string {
       para.push(lines[i] ?? "");
       i += 1;
     }
-    out.push(wrap(start, `<p>${inline(para.join(" "))}</p>`));
+    out.push(wrap(start, `<p>${rich(para.join(" "))}</p>`));
   }
 
   return out.join("");
