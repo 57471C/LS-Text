@@ -116,7 +116,6 @@
   }
 }
 
-/* CodeMirror chrome — keep in sync with the editor theme tokens */
 .cm-editor {
   height: 100%;
   min-height: 0;
@@ -149,6 +148,10 @@
 .cm-selectionMatch {
   background: color-mix(in oklab, var(--color-accent) 22%, transparent) !important;
 }
+.cm-md-mark {
+  background: color-mix(in oklab, #d4b106 42%, transparent);
+  border-radius: 2px;
+}
 .cm-tooltip {
   background: var(--color-elevated) !important;
   border: 1px solid var(--color-border) !important;
@@ -161,7 +164,6 @@
   background: color-mix(in oklab, var(--color-fg) 8%, transparent) !important;
 }
 
-/* cmdk */
 [cmdk-root] {
   font-family: var(--font-sans);
 }
@@ -268,6 +270,12 @@
   margin-right: 0.4em;
   vertical-align: -2px;
   accent-color: var(--color-accent);
+}
+.md-preview mark {
+  background: color-mix(in oklab, #d4b106 42%, transparent);
+  color: inherit;
+  padding: 0 0.12em;
+  border-radius: 2px;
 }
 .md-preview a {
   color: var(--color-accent);
