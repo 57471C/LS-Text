@@ -93,7 +93,8 @@ export async function loadLanguage(filename: string): Promise<Extension | null> 
       case "md":
       case "markdown": {
         const { markdown } = await import("@codemirror/lang-markdown");
-        return markdown();
+        const { markdownMarkHighlight } = await import("./markdown-mark");
+        return [markdown(), markdownMarkHighlight];
       }
       case "html":
       case "htm": {
