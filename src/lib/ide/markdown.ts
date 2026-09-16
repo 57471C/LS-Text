@@ -58,6 +58,22 @@ function inline(src: string): string {
         continue;
       }
     }
+    if (src.startsWith("__", i)) {
+      const j = src.indexOf("__", i + 2);
+      if (j > i) {
+        out += `<strong>${inline(src.slice(i + 2, j))}</strong>`;
+        i = j + 2;
+        continue;
+      }
+    }
+    if (src.startsWith("==", i)) {
+      const j = src.indexOf("==", i + 2);
+      if (j > i) {
+        out += `<mark>${inline(src.slice(i + 2, j))}</mark>`;
+        i = j + 2;
+        continue;
+      }
+    }
     if (src.startsWith("~~", i)) {
       const j = src.indexOf("~~", i + 2);
       if (j > i) {
