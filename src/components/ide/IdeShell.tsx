@@ -1,12 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toggleBase64InEditor } from "@/lib/ide/base64";
 import { copyRichFromEditor } from "@/lib/ide/copy-rich";
 import { useIde } from "@/lib/ide/store";
-import {
-  forceNativeClose,
-  hasQuitWorthyTabs,
-  shouldAllowNativeClose,
-} from "@/lib/ide/quit";
+import { hasQuitWorthyTabs, shouldAllowNativeClose } from "@/lib/ide/quit";
 import {
   getLaunchPaths,
   isTauriRuntime,
@@ -17,15 +13,26 @@ import { TauriDiskFS } from "@/lib/ide/tauri-fs";
 import { initUpdater } from "@/lib/ide/updater";
 import { hashOpenPath, newScratchDocument, openDocument } from "@/lib/ide/windows";
 import { ActivityBar } from "./ActivityBar";
-import { CommandPalette } from "./CommandPalette";
 import { DragHandle } from "./DragHandle";
 import { EditorPane } from "./EditorPane";
-import { FileTree } from "./FileTree";
-import { PromptDialog } from "./PromptDialog";
-import { SearchPanel } from "./SearchPanel";
-import { SettingsPanel } from "./SettingsPanel";
 import { StatusBar } from "./StatusBar";
 import { TabBar } from "./TabBar";
+
+const CommandPalette = lazy(() =>
+  import("./CommandPalette").then((m) => ({ default: m.CommandPalette })),
+);
+const SearchPanel = lazy(() =>
+  import("./SearchPanel").then((m) => ({ default: m.SearchPanel })),
+);
+const SettingsPanel = lazy(() =>
+  import("./SettingsPanel").then((m) => ({ default: m.SettingsPanel })),
+);
+const FileTree = lazy(() =>
+  import("./FileTree").then((m) => ({ default: m.FileTree })),
+);
+const PromptDialog = lazy(() =>
+  import("./PromptDialog").then((m) => ({ default: m.PromptDialog })),
+);
 
 const EXPLORER_COLLAPSE_WIDTH = 800;
 
@@ -93,6 +100,10 @@ async function openDroppedOsPaths(paths: string[]) {
 
 export function IdeShell() {
   const explorerOpen = useIde((s) => s.explorerOpen);
+  const paletteOpen = useIde((s) => s.paletteOpen);
+  const searchOpen = useIde((s) => s.searchOpen);
+  const settingsOpen = useIde((s) => s.settingsOpen);
+  const prompt = useIde((s) => s.prompt);
   const [explorerWidth, setExplorerWidth] = useState(240);
   const [dropHover, setDropHover] = useState(false);
   const dragDepth = useRef(0);
@@ -140,7 +151,11 @@ export function IdeShell() {
   }, []);
 
   useEffect(() => {
-    initUpdater();
+    const start = () => initUpdater();
+    const idle = window.requestIdleCallback?.(start);
+    if (idle != null) return () => window.cancelIdleCallback?.(idle);
+    const t = window.setTimeout(start, 1);
+    return () => window.clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -298,35 +313,36 @@ export function IdeShell() {
       <ActivityBar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1">
-            {showExplorer && (
-              <>
-                <div
-                  className="min-h-0 shrink-0"
-                  style={{ width: explorerWidth }}
-                >
+          {showExplorer && (
+            <>
+              <div className="min-h-0 shrink-0" style={{ width: explorerWidth }}>
+                <Suspense fallback={null}>
                   <FileTree />
-                </div>
-                <DragHandle
-                  axis="x"
-                  onDrag={(delta) =>
-                    setExplorerWidth((w) => Math.min(420, Math.max(160, w + delta)))
-                  }
-                />
-              </>
-            )}
-            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-              <TabBar />
-              <div className="flex min-h-0 flex-1 flex-col">
-                <EditorPane />
+                </Suspense>
               </div>
+              <DragHandle
+                axis="x"
+                onDrag={(delta) =>
+                  setExplorerWidth((w) => Math.min(420, Math.max(160, w + delta)))
+                }
+              />
+            </>
+          )}
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+            <TabBar />
+            <div className="flex min-h-0 flex-1 flex-col">
+              <EditorPane />
             </div>
           </div>
+        </div>
         <StatusBar />
       </div>
-      <CommandPalette />
-      <SearchPanel />
-      <SettingsPanel />
-      <PromptDialog />
+      <Suspense fallback={null}>
+        {paletteOpen ? <CommandPalette /> : null}
+        {searchOpen ? <SearchPanel /> : null}
+        {settingsOpen ? <SettingsPanel /> : null}
+        {prompt ? <PromptDialog /> : null}
+      </Suspense>
       {dropHover && (
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-bg/70">
           <p className="rounded-xl border border-accent bg-elevated px-6 py-4 text-sm text-fg shadow-(--shadow-float)">
