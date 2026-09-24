@@ -9,16 +9,38 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <style>
       html, body, #root {
-        background: #1f1f1f;
-        color: #cccccc;
+        background: var(--boot-bg, #1f1f1f);
+        color: var(--boot-fg, #cccccc);
         margin: 0;
         height: 100%;
       }
     </style>
+    <script>
+      (() => {
+        try {
+          const raw = localStorage.getItem("ls-text.boot");
+          if (!raw) return;
+          const boot = JSON.parse(raw);
+          if (boot.theme === "light") {
+            document.documentElement.dataset.theme = "light";
+            document.documentElement.style.colorScheme = "light";
+            document.documentElement.style.setProperty("--boot-bg", "#ffffff");
+            document.documentElement.style.setProperty("--boot-fg", "#1a1a1a");
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute("content", "#ffffff");
+          }
+          if (boot.fontSize) {
+            document.documentElement.style.setProperty(
+              "--editor-font-size",
+              boot.fontSize + "px",
+            );
+          }
+        } catch {}
+      })();
+    </script>
   </head>
   <body class="bg-bg text-fg overflow-hidden">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script type="module" src="/src/boot-updater.ts"></script>
   </body>
 </html>
