@@ -25,5 +25,17 @@ export default defineConfig({
     outDir: "dist",
     target: "es2022",
     sourcemap: false,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: "react", test: /node_modules[\\/](react|react-dom)[\\/]/ },
+            { name: "cm", test: /node_modules[\\/]@codemirror[\\/]/ },
+            { name: "lezer", test: /node_modules[\\/]@lezer[\\/]/ },
+            { name: "tauri", test: /node_modules[\\/]@tauri-apps[\\/]/ },
+          ],
+        },
+      },
+    },
   },
 });
