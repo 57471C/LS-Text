@@ -12,15 +12,12 @@ import {
 } from "@codemirror/commands";
 import {
   bracketMatching,
-  foldGutter,
-  foldKeymap,
   indentOnInput,
   indentUnit,
 } from "@codemirror/language";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
 import {
-  crosshairCursor,
   drawSelection,
   dropCursor,
   EditorView,
@@ -28,7 +25,6 @@ import {
   highlightActiveLineGutter,
   keymap,
   lineNumbers,
-  rectangularSelection,
 } from "@codemirror/view";
 import { useEffect, useRef, useState } from "react";
 import { DragHandle } from "./DragHandle";
@@ -123,7 +119,6 @@ function buildExtensions(
   return [
     lineNoConf.of(lineNoExt(settings)),
     activeLineConf.of(activeLineExt(settings)),
-    foldGutter(),
     drawSelection(),
     dropCursor(),
     EditorState.allowMultipleSelections.of(true),
@@ -131,8 +126,6 @@ function buildExtensions(
     bracketMatching(),
     closeBrackets(),
     autocompletion(),
-    rectangularSelection(),
-    crosshairCursor(),
     matchSelConf.of(matchSelExt(settings)),
     history(),
     keymap.of([
@@ -141,7 +134,6 @@ function buildExtensions(
       ...defaultKeymap,
       ...searchKeymap,
       ...historyKeymap,
-      ...foldKeymap,
       ...completionKeymap,
     ]),
     langConf.of([]),
@@ -184,19 +176,33 @@ export function EditorPane() {
 
   useEffect(() => {
     if (!parentRef.current) return;
+    const ide = useIde.getState();
+    const tab = ide.tabs.find((t) => t.id === ide.activeTabId);
+    const file = tab ? fileForLanguage(tab.language, tab.name) : "";
     const view = new EditorView({
       parent: parentRef.current,
       state: EditorState.create({
-        doc: "",
-        extensions: buildExtensions("__empty__", useIde.getState().settings, ""),
+        doc: tab?.content ?? "",
+        extensions: buildExtensions(tab?.id ?? "__empty__", ide.settings, file),
       }),
     });
     viewRef.current = view;
+    currentId.current = tab?.id ?? null;
     bindEditorView(view);
+    syncEditorMeta(view);
+    if (tab) {
+      statesRef.current.set(tab.id, view.state);
+      void loadLanguage(file).then((lang) => {
+        const v = viewRef.current;
+        if (!v || currentId.current !== tab.id) return;
+        v.dispatch({ effects: langConf.reconfigure(lang ?? []) });
+      });
+    }
     return () => {
       bindEditorView(null);
       view.destroy();
       viewRef.current = null;
+      currentId.current = null;
       statesRef.current.clear();
     };
   }, []);
