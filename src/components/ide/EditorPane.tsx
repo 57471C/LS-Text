@@ -12,12 +12,15 @@ import {
 } from "@codemirror/commands";
 import {
   bracketMatching,
+  foldGutter,
+  foldKeymap,
   indentOnInput,
   indentUnit,
 } from "@codemirror/language";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
 import {
+  crosshairCursor,
   drawSelection,
   dropCursor,
   EditorView,
@@ -25,6 +28,7 @@ import {
   highlightActiveLineGutter,
   keymap,
   lineNumbers,
+  rectangularSelection,
 } from "@codemirror/view";
 import { useEffect, useRef, useState } from "react";
 import { DragHandle } from "./DragHandle";
@@ -119,6 +123,7 @@ function buildExtensions(
   return [
     lineNoConf.of(lineNoExt(settings)),
     activeLineConf.of(activeLineExt(settings)),
+    foldGutter(),
     drawSelection(),
     dropCursor(),
     EditorState.allowMultipleSelections.of(true),
@@ -126,6 +131,8 @@ function buildExtensions(
     bracketMatching(),
     closeBrackets(),
     autocompletion(),
+    rectangularSelection(),
+    crosshairCursor(),
     matchSelConf.of(matchSelExt(settings)),
     history(),
     keymap.of([
@@ -134,6 +141,7 @@ function buildExtensions(
       ...defaultKeymap,
       ...searchKeymap,
       ...historyKeymap,
+      ...foldKeymap,
       ...completionKeymap,
     ]),
     langConf.of([]),
