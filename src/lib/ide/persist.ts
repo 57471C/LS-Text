@@ -2,6 +2,7 @@ import { isTauriRuntime } from "./tauri";
 import type { SessionDump } from "./types";
 
 const KEY = "ls-text.v1";
+export const BOOT_KEY = "ls-text.boot";
 
 function slim(dump: SessionDump): SessionDump {
   return {
@@ -15,6 +16,22 @@ function slim(dump: SessionDump): SessionDump {
   };
 }
 
+/** Sync theme/font for the index.html first-paint script. Webview localStorage is readable before React. */
+export function rememberBoot(settings?: SessionDump["settings"]) {
+  if (typeof localStorage === "undefined" || !settings) return;
+  try {
+    localStorage.setItem(
+      BOOT_KEY,
+      JSON.stringify({
+        theme: settings.theme === "light" ? "light" : "dark",
+        fontSize: settings.fontSize,
+      }),
+    );
+  } catch {
+    /* quota */
+  }
+}
+
 export async function loadSession(): Promise<SessionDump | null> {
   try {
     if (isTauriRuntime()) {
@@ -22,14 +39,18 @@ export async function loadSession(): Promise<SessionDump | null> {
       const store = new LazyStore("session.json");
       const dump = await store.get<SessionDump>("session");
       if (dump?.version !== 1 && dump?.version !== 2) return null;
-      return slim(dump);
+      const session = slim(dump);
+      rememberBoot(session.settings);
+      return session;
     }
     if (typeof localStorage === "undefined") return null;
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SessionDump;
     if (parsed?.version !== 1 && parsed?.version !== 2) return null;
-    return slim(parsed);
+    const session = slim(parsed);
+    rememberBoot(session.settings);
+    return session;
   } catch {
     return null;
   }
@@ -37,6 +58,7 @@ export async function loadSession(): Promise<SessionDump | null> {
 
 export async function saveSession(dump: SessionDump) {
   const payload = slim(dump);
+  rememberBoot(payload.settings);
   try {
     if (isTauriRuntime()) {
       const { LazyStore } = await import("@tauri-apps/plugin-store");
