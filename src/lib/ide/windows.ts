@@ -30,8 +30,6 @@ export async function openFileInNewWindow(path: string | null): Promise<boolean>
     minWidth: 720,
     minHeight: 480,
     focus: true,
-    visible: false,
-    backgroundColor: "#1f1f1f",
   });
   return true;
 }
