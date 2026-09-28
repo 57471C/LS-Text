@@ -35,3 +35,18 @@ pub fn list_dir(path: String) -> Result<Vec<DirEntry>, String> {
     });
     Ok(entries)
 }
+
+#[tauri::command]
+pub fn read_text(path: String) -> Result<String, String> {
+    fs::read_to_string(&path).map_err(|e| format!("{e}: {path}"))
+}
+
+#[tauri::command]
+pub fn write_text(path: String, contents: String) -> Result<(), String> {
+    if let Some(parent) = PathBuf::from(&path).parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+    }
+    fs::write(&path, contents).map_err(|e| format!("{e}: {path}"))
+}
