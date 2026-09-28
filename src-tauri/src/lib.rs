@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::fs_extra::list_dir;
+use commands::fs_extra::{list_dir, read_text, write_text};
 use commands::launch::{collect_open_paths, launch_paths};
 use commands::terminal::open_external_terminal;
 use tauri::{Emitter, Manager};
@@ -26,6 +26,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             open_external_terminal,
             list_dir,
+            read_text,
+            write_text,
             launch_paths
         ])
         .run(tauri::generate_context!())
