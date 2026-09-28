@@ -1,11 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import {
-  mkdir,
-  readTextFile,
-  remove,
-  rename,
-  writeTextFile,
-} from "@tauri-apps/plugin-fs";
 import { basename, joinPath, parentPath } from "@/lib/utils";
 import type { DirEntry, FileSystemAdapter } from "./types";
 
@@ -18,7 +11,8 @@ interface RustDirEntry {
 export function isOsPath(path: string) {
   if (!path || path.startsWith("__scratch__")) return false;
   if (/^[A-Za-z]:[\\/]/.test(path)) return true;
-  if (path.startsWith("\\\\")) return true;
+  // UNC: \\server\share or //server/share
+  if (/^\\\\[^\\/]+[\\/]/.test(path) || /^\/\/[^\\/]+[\\/]/.test(path)) return true;
   return (
     path.startsWith("/Users/") ||
     path.startsWith("/home/") ||
@@ -30,19 +24,20 @@ export function isOsPath(path: string) {
 }
 
 export async function readOsFile(path: string) {
-  return readTextFile(path);
+  return invoke<string>("read_text", { path });
 }
 
 export async function writeOsFile(path: string, content: string) {
   const dir = parentPath(path);
   if (dir && dir !== path) {
     try {
-      await mkdir(dir, { recursive: true });
+      await invoke("write_text", { path, contents: content });
+      return;
     } catch {
-      /* exists */
+      /* fall through with explicit write below */
     }
   }
-  await writeTextFile(path, content);
+  await invoke("write_text", { path, contents: content });
 }
 
 export class TauriDiskFS implements FileSystemAdapter {
@@ -65,7 +60,7 @@ export class TauriDiskFS implements FileSystemAdapter {
   }
 
   async read(path: string): Promise<string> {
-    return readTextFile(path);
+    return readOsFile(path);
   }
 
   async write(path: string, content: string): Promise<void> {
@@ -73,14 +68,17 @@ export class TauriDiskFS implements FileSystemAdapter {
   }
 
   async mkdir(path: string): Promise<void> {
+    const { mkdir } = await import("@tauri-apps/plugin-fs");
     await mkdir(path, { recursive: true });
   }
 
   async remove(path: string): Promise<void> {
+    const { remove } = await import("@tauri-apps/plugin-fs");
     await remove(path, { recursive: true });
   }
 
   async rename(from: string, to: string): Promise<void> {
+    const { rename } = await import("@tauri-apps/plugin-fs");
     await rename(from, to);
   }
 
