@@ -32,19 +32,30 @@ fn strip_file_url(raw: &str) -> Option<String> {
         return None;
     }
     let rest = raw.splitn(2, ':').nth(1)?;
-    let rest = rest.trim_start_matches('/');
-    let rest = rest.strip_prefix("localhost/").unwrap_or(rest);
     let decoded = percent_decode(rest);
+
     #[cfg(windows)]
     {
-        Some(decoded.replace('/', "\\"))
+        let mut s = decoded.replace('/', "\\");
+        while s.starts_with('\\') {
+            s = s[1..].to_string();
+        }
+        let s = s.strip_prefix("localhost\\").unwrap_or(&s);
+        let s = s.strip_prefix("localhost/").unwrap_or(s);
+        if s.len() >= 2 && s.as_bytes().get(1) == Some(&b':') {
+            return Some(s.to_string());
+        }
+        Some(format!("\\\\{s}"))
     }
+
     #[cfg(not(windows))]
     {
-        Some(if decoded.starts_with('/') {
-            decoded
+        let rest = decoded.trim_start_matches('/');
+        let rest = rest.strip_prefix("localhost/").unwrap_or(rest);
+        Some(if rest.starts_with('/') {
+            rest.to_string()
         } else {
-            format!("/{decoded}")
+            format!("/{rest}")
         })
     }
 }
