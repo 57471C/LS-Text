@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { basename, joinPath, parentPath } from "@/lib/utils";
+import { basename, joinPath } from "@/lib/utils";
 import type { DirEntry, FileSystemAdapter } from "./types";
 
 interface RustDirEntry {
@@ -11,8 +11,7 @@ interface RustDirEntry {
 export function isOsPath(path: string) {
   if (!path || path.startsWith("__scratch__")) return false;
   if (/^[A-Za-z]:[\\/]/.test(path)) return true;
-  // UNC: \\server\share or //server/share
-  if (/^\\\\[^\\/]+[\\/]/.test(path) || /^\/\/[^\\/]+[\\/]/.test(path)) return true;
+  if (path.startsWith("\\\\") || path.startsWith("//")) return true;
   return (
     path.startsWith("/Users/") ||
     path.startsWith("/home/") ||
@@ -28,15 +27,6 @@ export async function readOsFile(path: string) {
 }
 
 export async function writeOsFile(path: string, content: string) {
-  const dir = parentPath(path);
-  if (dir && dir !== path) {
-    try {
-      await invoke("write_text", { path, contents: content });
-      return;
-    } catch {
-      /* fall through with explicit write below */
-    }
-  }
   await invoke("write_text", { path, contents: content });
 }
 
