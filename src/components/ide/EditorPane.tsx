@@ -180,7 +180,11 @@ export function EditorPane() {
   const settings = useIde((s) => s.settings);
   const previewOpen = useIde((s) => s.previewOpen);
   const reveal = useIde((s) => s.reveal);
-  const showPreview = previewOpen && isMarkdownName(modeName);
+  const md = isMarkdownName(modeName);
+  const previewFirst = Boolean(settings.previewMdFirst) && md;
+  const showPreview = md && (previewFirst || previewOpen);
+  const showEditor = !previewFirst || previewOpen;
+  const split = showPreview && showEditor;
 
   useEffect(() => {
     if (!parentRef.current) return;
@@ -297,9 +301,9 @@ export function EditorPane() {
   useEffect(() => {
     const view = viewRef.current;
     const preview = previewRef.current;
-    if (!view || !preview || !showPreview) return;
+    if (!view || !preview || !split) return;
     return bindMarkdownScroll(view, preview);
-  }, [showPreview, tabId]);
+  }, [split, tabId]);
 
   useEffect(() => {
     if (!showPreview) return;
@@ -322,12 +326,14 @@ export function EditorPane() {
       <div
         ref={parentRef}
         className={
-          showPreview
-            ? "min-h-0 min-w-0 flex-1 overflow-hidden"
-            : "absolute inset-0 overflow-hidden"
+          showEditor
+            ? split
+              ? "min-h-0 min-w-0 flex-1 overflow-hidden"
+              : "absolute inset-0 overflow-hidden"
+            : "hidden"
         }
       />
-      {showPreview && (
+      {split && (
         <>
           <DragHandle
             axis="x"
@@ -347,8 +353,10 @@ export function EditorPane() {
               )
             }
           />
-          <MarkdownPreview content={content} scrollRef={previewRef} />
         </>
+      )}
+      {showPreview && (
+        <MarkdownPreview content={content} scrollRef={previewRef} solo={!showEditor} />
       )}
     </div>
   );
