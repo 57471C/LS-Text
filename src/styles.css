@@ -225,10 +225,16 @@
     border-left: 1px solid var(--color-border);
   }
 }
+.md-preview-pane.is-solo {
+  flex: 1 1 auto;
+  width: auto;
+  height: auto;
+  border: none;
+}
 
 .md-preview {
   font-family: var(--font-sans);
-  font-size: calc(var(--editor-font-size, 13px) + 1px);
+  font-size: calc((var(--editor-font-size, 13px) + 1px) * var(--md-preview-zoom, 1));
   line-height: 1.65;
   color: var(--color-fg);
   overscroll-behavior: contain;
