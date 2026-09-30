@@ -32,7 +32,7 @@ export interface EditorSettings {
   oneFilePerWindow?: boolean;
   /** .md opens as preview; split control reveals the editor. */
   previewMdFirst?: boolean;
-  /** Preview zoom percent. 80–160. */
+  /** Preview zoom percent. 50–200. App-wide. */
   previewZoom?: number;
   /** Folder last used by Save As. */
   lastSaveDir?: string;
