@@ -30,6 +30,10 @@ export interface EditorSettings {
   highlightSelectionMatches?: boolean;
   /** One buffer per window. Extra files open a new window on desktop. */
   oneFilePerWindow?: boolean;
+  /** .md opens as preview; split control reveals the editor. */
+  previewMdFirst?: boolean;
+  /** Preview zoom percent. 80–160. */
+  previewZoom?: number;
 }
 
 export interface CursorPos {
