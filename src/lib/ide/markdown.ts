@@ -16,6 +16,22 @@ function safeUrl(href: string) {
   return null;
 }
 
+function wrapPair(
+  src: string,
+  i: number,
+  marker: string,
+  open: string,
+  close: string,
+): { html: string; next: number } | null {
+  if (!src.startsWith(marker, i)) return null;
+  const j = src.indexOf(marker, i + marker.length);
+  if (j <= i + marker.length - 1) return null;
+  return {
+    html: `${open}${inline(src.slice(i + marker.length, j))}${close}`,
+    next: j + marker.length,
+  };
+}
+
 function inline(src: string): string {
   let out = "";
   let i = 0;
@@ -50,40 +66,31 @@ function inline(src: string): string {
         continue;
       }
     }
-    if (src.startsWith("**", i)) {
-      const j = src.indexOf("**", i + 2);
-      if (j > i) {
-        out += `<strong>${inline(src.slice(i + 2, j))}</strong>`;
-        i = j + 2;
-        continue;
-      }
+
+    // Longest marker first so *** / ___ are not eaten as ** / __.
+    const pair =
+      wrapPair(src, i, "***", "<strong><em>", "</em></strong>") ??
+      wrapPair(src, i, "___", "<strong><em>", "</em></strong>") ??
+      wrapPair(src, i, "**", "<strong>", "</strong>") ??
+      wrapPair(src, i, "__", "<strong>", "</strong>") ??
+      wrapPair(src, i, "==", "<mark>", "</mark>") ??
+      wrapPair(src, i, "~~", "<del>", "</del>");
+    if (pair) {
+      out += pair.html;
+      i = pair.next;
+      continue;
     }
-    if (src.startsWith("__", i)) {
-      const j = src.indexOf("__", i + 2);
-      if (j > i) {
-        out += `<strong>${inline(src.slice(i + 2, j))}</strong>`;
-        i = j + 2;
-        continue;
-      }
-    }
-    if (src.startsWith("==", i)) {
-      const j = src.indexOf("==", i + 2);
-      if (j > i) {
-        out += `<mark>${inline(src.slice(i + 2, j))}</mark>`;
-        i = j + 2;
-        continue;
-      }
-    }
-    if (src.startsWith("~~", i)) {
-      const j = src.indexOf("~~", i + 2);
-      if (j > i) {
-        out += `<del>${inline(src.slice(i + 2, j))}</del>`;
-        i = j + 2;
-        continue;
-      }
-    }
-    if (src[i] === "*" && src[i + 1] !== " " && src[i + 1] !== "*") {
+
+    if (src[i] === "*" && src[i + 1] && src[i + 1] !== " ") {
       const j = src.indexOf("*", i + 1);
+      if (j > i) {
+        out += `<em>${inline(src.slice(i + 1, j))}</em>`;
+        i = j + 1;
+        continue;
+      }
+    }
+    if (src[i] === "_" && src[i + 1] && src[i + 1] !== " ") {
+      const j = src.indexOf("_", i + 1);
       if (j > i) {
         out += `<em>${inline(src.slice(i + 1, j))}</em>`;
         i = j + 1;
