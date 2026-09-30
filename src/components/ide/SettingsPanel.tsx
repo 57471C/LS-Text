@@ -112,6 +112,16 @@ export function SettingsPanel() {
             onChange={() => useIde.getState().togglePreview()}
           />
           <Toggle
+            label="Preview MD first"
+            hint=".md opens as preview. The split control shows the editor"
+            checked={Boolean(settings.previewMdFirst)}
+            onChange={(previewMdFirst) => {
+              const ide = useIde.getState();
+              ide.setSettings({ previewMdFirst });
+              if (previewMdFirst && ide.previewOpen) ide.togglePreview();
+            }}
+          />
+          <Toggle
             label="One file per window"
             hint="Desktop: extra files open a new window instead of a tab"
             checked={Boolean(settings.oneFilePerWindow)}
