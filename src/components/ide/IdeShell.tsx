@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toggleBase64InEditor } from "@/lib/ide/base64";
 import { copyRichFromEditor } from "@/lib/ide/copy-rich";
+import { saveActive, saveActiveAs } from "@/lib/ide/save-file";
 import { useIde } from "@/lib/ide/store";
 import { hasQuitWorthyTabs, shouldAllowNativeClose } from "@/lib/ide/quit";
 import {
@@ -227,9 +228,12 @@ export function IdeShell() {
       if (!mod) return;
       const k = e.key.toLowerCase();
 
-      if (k === "s" && !e.shiftKey) {
+      if (k === "s" && e.shiftKey) {
         e.preventDefault();
-        void useIde.getState().saveTab();
+        void saveActiveAs();
+      } else if (k === "s") {
+        e.preventDefault();
+        void saveActive();
       } else if (k === "w") {
         e.preventDefault();
         if (!useIde.getState().prompt) useIde.getState().closeActive();
