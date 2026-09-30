@@ -4,6 +4,7 @@ use commands::fs_extra::{list_dir, read_text, write_text};
 use commands::launch::{collect_open_paths, launch_paths};
 use commands::terminal::open_external_terminal;
 use tauri::{Emitter, Manager};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -23,6 +24,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             open_external_terminal,
             list_dir,
@@ -30,6 +32,11 @@ pub fn run() {
             write_text,
             launch_paths
         ])
+        .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed) {
+                let _ = window.app_handle().save_window_state(StateFlags::all());
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running LS-Text");
 }
