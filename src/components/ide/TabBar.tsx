@@ -7,23 +7,25 @@ export function TabBar() {
   const tabs = useIde((s) => s.tabs);
   const activeTabId = useIde((s) => s.activeTabId);
   const previewOpen = useIde((s) => s.previewOpen);
+  const previewFirst = useIde((s) => Boolean(s.settings.previewMdFirst));
   const oneFile = useIde((s) => Boolean(s.settings.oneFilePerWindow));
   const active = tabs.find((t) => t.id === activeTabId);
   const activeName = active?.name ?? "";
   const md = isMarkdownName(activeName) || active?.language === "Markdown";
   const mod = modLabel();
   const dirty = active ? isDirty(active) : false;
+  const splitOn = previewFirst ? previewOpen : previewOpen;
 
   const previewBtn = md ? (
     <button
       type="button"
       className={cn(
         "flex h-9 w-9 shrink-0 items-center justify-center border-l border-border text-muted hover:text-fg",
-        previewOpen && "bg-bg text-fg",
+        splitOn && "bg-bg text-fg",
       )}
-      aria-pressed={previewOpen}
-      aria-label="Toggle markdown preview"
-      title={`${mod}+Shift+V`}
+      aria-pressed={splitOn}
+      aria-label={previewFirst ? "Toggle editor" : "Toggle markdown preview"}
+      title={previewFirst ? `${mod}+Shift+V show editor` : `${mod}+Shift+V`}
       onClick={() => useIde.getState().togglePreview()}
     >
       <Columns2 className="size-4" strokeWidth={1.7} />
