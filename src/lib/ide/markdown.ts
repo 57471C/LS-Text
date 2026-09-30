@@ -115,6 +115,10 @@ function richFor(line: number) {
   };
 }
 
+function paintLines(lines: string[], startLine: number) {
+  return lines.map((line, idx) => richFor(startLine + idx)(line)).join("<br>");
+}
+
 function isFence(s: string) {
   return s.startsWith("```");
 }
@@ -235,7 +239,7 @@ export function renderMarkdown(src: string): string {
         body.push((lines[i] ?? "").replace(/^>\s?/, ""));
         i += 1;
       }
-      out.push(wrap(start, `<blockquote><p>${richFor(start)(body.join(" "))}</p></blockquote>`));
+      out.push(wrap(start, `<blockquote><p>${paintLines(body, start)}</p></blockquote>`));
       continue;
     }
 
@@ -273,7 +277,7 @@ export function renderMarkdown(src: string): string {
       para.push(lines[i] ?? "");
       i += 1;
     }
-    out.push(wrap(start, `<p>${richFor(start)(para.join(" "))}</p>`));
+    out.push(wrap(start, `<p>${paintLines(para, start)}</p>`));
   }
 
   return out.join("");
