@@ -4,8 +4,8 @@ import { renderMarkdown } from "@/lib/ide/markdown";
 import { toggleTaskAt } from "@/lib/ide/markdown-task";
 import { useIde } from "@/lib/ide/store";
 
-export const PREVIEW_ZOOM_MIN = 80;
-export const PREVIEW_ZOOM_MAX = 160;
+export const PREVIEW_ZOOM_MIN = 50;
+export const PREVIEW_ZOOM_MAX = 200;
 export const PREVIEW_ZOOM_STEP = 10;
 export const PREVIEW_ZOOM_DEFAULT = 100;
 
@@ -53,7 +53,7 @@ export function MarkdownPreview({
             >
               <Minus className="size-3.5" strokeWidth={1.8} />
             </button>
-            <span className="w-8 text-center text-[10px] tabular-nums text-subtle">{zoom}%</span>
+            <span className="w-10 text-center text-[10px] tabular-nums text-subtle">{zoom}%</span>
             <button
               type="button"
               className="flex size-6 items-center justify-center rounded-sm text-muted hover:bg-elevated hover:text-fg disabled:opacity-30"
