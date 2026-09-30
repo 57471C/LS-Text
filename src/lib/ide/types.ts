@@ -34,6 +34,8 @@ export interface EditorSettings {
   previewMdFirst?: boolean;
   /** Preview zoom percent. 80–160. */
   previewZoom?: number;
+  /** Folder last used by Save As. */
+  lastSaveDir?: string;
 }
 
 export interface CursorPos {
