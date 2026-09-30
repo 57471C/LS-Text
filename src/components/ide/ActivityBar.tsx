@@ -2,10 +2,13 @@ import {
   FilePlus,
   FolderOpen,
   PanelLeft,
+  Save,
+  SaveAll,
   Search,
   Settings,
   SquareTerminal,
 } from "lucide-react";
+import { saveActive, saveActiveAs } from "@/lib/ide/save-file";
 import { useIde } from "@/lib/ide/store";
 import { newScratchDocument } from "@/lib/ide/windows";
 import { cn, modLabel } from "@/lib/utils";
@@ -63,10 +66,37 @@ const items: {
   },
 ];
 
+const saveItems: {
+  id: string;
+  label: string;
+  shortcut: string;
+  icon: typeof Save;
+  run: () => void;
+}[] = [
+  {
+    id: "save",
+    label: "Save",
+    shortcut: "S",
+    icon: Save,
+    run: () => void saveActive(),
+  },
+  {
+    id: "save-as",
+    label: "Save as",
+    shortcut: "Shift+S",
+    icon: SaveAll,
+    run: () => void saveActiveAs(),
+  },
+];
+
 export function ActivityBar() {
   const explorerOpen = useIde((s) => s.explorerOpen);
   const settingsOpen = useIde((s) => s.settingsOpen);
   const searchOpen = useIde((s) => s.searchOpen);
+  const dirty = useIde((s) => {
+    const tab = s.tabs.find((t) => t.id === s.activeTabId);
+    return Boolean(tab && tab.content !== tab.originalContent);
+  });
   const mod = modLabel();
 
   const activeOf = (id: string) => {
@@ -109,6 +139,26 @@ export function ActivityBar() {
             {active && (
               <span className="absolute bg-accent max-md:bottom-1 max-md:left-1/2 max-md:h-0.5 max-md:w-5 max-md:-translate-x-1/2 md:top-1/2 md:left-0 md:h-5 md:w-0.5 md:-translate-y-1/2" />
             )}
+            <Icon className="size-5" strokeWidth={1.6} />
+          </button>
+        );
+      })}
+      <span className="hidden md:my-1 md:block md:h-px md:w-6 md:bg-border" aria-hidden />
+      {saveItems.map((item) => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            title={`${item.label}  ${mod}+${item.shortcut}`}
+            aria-label={item.label}
+            onClick={item.run}
+            className={cn(
+              "relative flex size-11 items-center justify-center rounded-md transition-colors duration-150",
+              "hover:bg-elevated hover:text-fg",
+              item.id === "save" && dirty && "text-fg",
+            )}
+          >
             <Icon className="size-5" strokeWidth={1.6} />
           </button>
         );
