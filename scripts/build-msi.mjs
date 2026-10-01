@@ -1,10 +1,30 @@
 import { spawnSync } from "node:child_process";
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 if (process.platform !== "win32") {
   console.error("build:msi only runs on Windows.");
   process.exit(1);
+}
+
+function findSigntool() {
+  if (process.env.MSI_SIGNTOOL && existsSync(process.env.MSI_SIGNTOOL)) {
+    return process.env.MSI_SIGNTOOL;
+  }
+  const roots = [
+    join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "Windows Kits", "10", "bin"),
+    join(process.env.ProgramFiles || "C:\\Program Files", "Windows Kits", "10", "bin"),
+  ];
+  const found = [];
+  for (const root of roots) {
+    if (!existsSync(root)) continue;
+    for (const ver of readdirSync(root)) {
+      const candidate = join(root, ver, "x64", "signtool.exe");
+      if (existsSync(candidate)) found.push(candidate);
+    }
+  }
+  found.sort();
+  return found.at(-1) || "signtool";
 }
 
 const build = spawnSync(
@@ -35,11 +55,13 @@ if (!thumb && !pfx) {
   process.exit(0);
 }
 
+const signtool = findSigntool();
+console.log(`Signing with ${signtool}`);
 const args = ["sign", "/fd", "SHA256", "/td", "SHA256", "/tr", timestamp];
 if (thumb) args.push("/sha1", thumb);
 else args.push("/f", pfx, "/p", process.env.MSI_PFX_PASSWORD || "");
 args.push(msi);
 
-const sign = spawnSync("signtool", args, { stdio: "inherit", shell: true });
+const sign = spawnSync(signtool, args, { stdio: "inherit", shell: true });
 if (sign.status !== 0) process.exit(sign.status ?? 1);
 console.log(`\nSigned MSI: ${msi}`);
