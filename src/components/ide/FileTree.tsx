@@ -1,3 +1,193 @@
+import type { ReactNode } from "react";
+import {
+  ChevronRight,
+  FolderPlus,
+  FilePlus,
+  MoreHorizontal,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileIcon } from "./FileIcon";
+import { isKnownLanguage } from "@/lib/ide/languages";
+import type { DirEntry } from "@/lib/ide/types";
+import { isDirty, useIde } from "@/lib/ide/store";
+import { openDocument } from "@/lib/ide/windows";
+import { cn } from "@/lib/utils";
+
+const EMPTY: DirEntry[] = [];
+
+function Node({ entry, depth }: { entry: DirEntry; depth: number }) {
+  const expanded = useIde((s) => s.expandedDirs.includes(entry.path));
+  const children = useIde((s) => s.children[entry.path]);
+  const activePath = useIde((s) => s.tabs.find((t) => t.id === s.activeTabId)?.path);
+  const dirty = useIde((s) => s.tabs.some((t) => t.path === entry.path && isDirty(t)));
+  const theme = useIde((s) => s.settings.theme);
+  const known = entry.kind === "file" && isKnownLanguage(entry.name);
+  const [menu, setMenu] = useState(false);
+
+  useEffect(() => {
+    if (entry.kind === "dir" && expanded && !children) {
+      void useIde.getState().expandDir(entry.path);
+    }
+  }, [entry.kind, entry.path, expanded, children]);
+
+  const onOpen = () => {
+    if (entry.kind === "dir") void useIde.getState().toggleDir(entry.path);
+    else void openDocument(entry.path);
+  };
+
+  return (
+    <div>
+      <div
+        className={cn(
+          "group relative flex h-8 items-center gap-1.5 rounded-sm pr-1 text-[13px] text-muted",
+          "hover:bg-elevated hover:text-fg",
+          activePath === entry.path && "bg-elevated text-fg",
+        )}
+        style={{ paddingLeft: 8 + depth * 12 }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenu((v) => !v);
+        }}
+      >
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+          onClick={onOpen}
+          onDoubleClick={onOpen}
+        >
+          {entry.kind === "dir" ? (
+            <ChevronRight
+              className={cn(
+                "size-3 shrink-0 text-subtle transition-transform duration-150",
+                expanded && "rotate-90",
+              )}
+              strokeWidth={1.8}
+            />
+          ) : (
+            <span className="inline-block w-3" />
+          )}
+          <FileIcon name={entry.name} kind={entry.kind} open={expanded} />
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              known && !dirty && theme === "light" && "text-[#7a5a10]",
+              known && !dirty && theme !== "light" && "text-[#c6b056]",
+              dirty && "text-fg",
+            )}
+          >
+            {entry.name}
+          </span>
+          {dirty && (
+            <span
+              className="ml-auto shrink-0 text-[10px] font-semibold tracking-wide text-[#b07d12]"
+              title="Unsaved changes"
+            >
+              M
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          className="size-6 shrink-0 rounded-sm opacity-0 hover:bg-tab-active group-hover:opacity-100"
+          aria-label="File actions"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenu((v) => !v);
+          }}
+        >
+          <MoreHorizontal className="mx-auto size-3.5" />
+        </button>
+        {menu && (
+          <div
+            className="absolute top-8 right-1 z-30 min-w-36 rounded-md border border-border bg-elevated py-1 shadow-[var(--shadow-float)]"
+            onMouseLeave={() => setMenu(false)}
+          >
+            {entry.kind === "dir" && (
+              <>
+                <MenuItem
+                  onClick={() => {
+                    setMenu(false);
+                    useIde.getState().requestPrompt({
+                      kind: "new-file",
+                      path: entry.path,
+                      value: "untitled.md",
+                    });
+                  }}
+                >
+                  New file
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setMenu(false);
+                    useIde.getState().requestPrompt({
+                      kind: "new-folder",
+                      path: entry.path,
+                      value: "folder",
+                    });
+                  }}
+                >
+                  New folder
+                </MenuItem>
+              </>
+            )}
+            <MenuItem
+              onClick={() => {
+                setMenu(false);
+                useIde.getState().requestPrompt({
+                  kind: "rename",
+                  path: entry.path,
+                  value: entry.name,
+                });
+              }}
+            >
+              Rename
+            </MenuItem>
+            <MenuItem
+              danger
+              onClick={() => {
+                setMenu(false);
+                useIde.getState().requestPrompt({ kind: "delete", path: entry.path });
+              }}
+            >
+              Delete
+            </MenuItem>
+          </div>
+        )}
+      </div>
+      {entry.kind === "dir" && expanded && children && (
+        <div>
+          {children.map((child) => (
+            <Node key={child.path} entry={child} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuItem({
+  children,
+  onClick,
+  danger,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex h-8 w-full items-center px-3 text-left text-xs text-fg hover:bg-tab-active",
+        danger && "text-danger",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function FileTree() {
   const root = useIde((s) => s.fs.rootPath);
   const name = useIde((s) => s.fs.name);
