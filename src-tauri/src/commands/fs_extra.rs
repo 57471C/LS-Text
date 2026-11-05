@@ -43,9 +43,21 @@ pub fn list_dir(path: String) -> Result<Vec<DirEntry>, String> {
     let (tx, rx) = mpsc::channel();
     let probe = path.clone();
     thread::spawn(move || {
+<<<<<<< HEAD
         let _ = tx.send(list_dir_inner(&probe));
     });
     match rx.recv_timeout(Duration::from_secs(4)) {
+=======
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            list_dir_inner(&probe)
+        }));
+        let _ = tx.send(match result {
+            Ok(r) => r,
+            Err(_) => Err(format!("Failed to list folder (panic): {path}")),
+        });
+    });
+    match rx.recv_timeout(Duration::from_secs(1)) {
+>>>>>>> 8d2362a (fix network path crash issue)
         Ok(result) => result,
         Err(_) => Err(format!(
             "Folder not available. The network drive may be disconnected: {path}"

@@ -201,47 +201,49 @@ export const useIde = create<IdeStore>((set, get) => {
   workspaceError: null,
 
   hydrate: async () => {
-    const dump = await loadSession();
-    if (!dump) {
-      if (typeof window !== "undefined" && window.innerWidth < 768) {
-        set({ explorerOpen: false });
+    try {
+      const dump = await loadSession();
+      if (!dump) {
+        if (typeof window !== "undefined" && window.innerWidth < 768) {
+          set({ explorerOpen: false });
+        }
+        return;
       }
-      return;
-    }
-    let fs: FileSystemAdapter;
-    if (
-      dump.workspaceKind === "native" &&
-      dump.workspacePath &&
-      isTauriRuntime()
-    ) {
-      fs = new TauriDiskFS(dump.workspacePath);
-    } else if (dump.virtual) {
-      fs = new VirtualFileSystem(dump.virtual);
-    } else {
-      fs = createInitialFs();
-    }
+      let fs: FileSystemAdapter;
+      if (
+        dump.workspaceKind === "native" &&
+        dump.workspacePath &&
+        isTauriRuntime()
+      ) {
+        fs = new TauriDiskFS(dump.workspacePath);
+      } else if (dump.virtual) {
+        fs = new VirtualFileSystem(dump.virtual);
+      } else {
+        fs = createInitialFs();
+      }
 
-    let tabs = dump.tabs ?? [];
-    let activeTabId = dump.activeTabId ?? null;
-    if (tabs.length === 0) {
-      const first = makeUntitled(1);
-      tabs = [first];
-      activeTabId = first.id;
-    }
+      let tabs = dump.tabs ?? [];
+      let activeTabId = dump.activeTabId ?? null;
+      if (tabs.length === 0) {
+        const first = makeUntitled(1);
+        tabs = [first];
+        activeTabId = first.id;
+      }
 
-    const settings = { ...DEFAULT_SETTINGS, ...dump.settings };
-    settings.fontSize = Math.min(
-      FONT_MAX,
-      Math.max(FONT_MIN, settings.fontSize || FONT_DEFAULT),
-    );
-    if (typeof document !== "undefined") {
-      document.documentElement.dataset.theme = settings.theme;
-      document.documentElement.style.setProperty(
-        "--editor-font-size",
-        `${settings.fontSize}px`,
+      const settings = { ...DEFAULT_SETTINGS, ...dump.settings };
+      settings.fontSize = Math.min(
+        FONT_MAX,
+        Math.max(FONT_MIN, settings.fontSize || FONT_DEFAULT),
       );
-    }
+      if (typeof document !== "undefined") {
+        document.documentElement.dataset.theme = settings.theme;
+        document.documentElement.style.setProperty(
+          "--editor-font-size",
+          `${settings.fontSize}px`,
+        );
+      }
 
+<<<<<<< HEAD
     set({
       ready: true,
       fs,
@@ -271,6 +273,53 @@ export const useIde = create<IdeStore>((set, get) => {
       };
       retry(3000);
       retry(10000);
+=======
+      set({
+        ready: true,
+        fs,
+        tabs,
+        activeTabId,
+        expandedDirs: dump.expandedDirs?.length ? dump.expandedDirs : [fs.rootPath],
+        explorerOpen:
+          dump.explorerOpen ??
+          (typeof window !== "undefined" ? window.innerWidth >= 768 : true),
+        terminalOpen: dump.terminalOpen ?? false,
+        previewOpen: dump.previewOpen ?? true,
+        settings,
+        children:
+          fs instanceof VirtualFileSystem ? seedChildren(fs) : {},
+        terminalCwd: dump.terminalCwd ?? fs.rootPath,
+        status: fs.kind === "virtual" ? "Scratchpad workspace" : fs.name,
+        workspaceError: null,
+      });
+      if (fs.kind === "native") {
+        void get().refreshDir(fs.rootPath);
+        const root = fs.rootPath;
+        const retry = (delay: number) => {
+          window.setTimeout(() => {
+            const s = get();
+            if (s.fs.rootPath !== root || !s.workspaceError) return;
+            void s.refreshDir(root);
+          }, delay);
+        };
+        retry(2000);
+        retry(8000);
+      }
+    } catch (err) {
+      console.error("Session hydrate failed", err);
+      const initialFs = createInitialFs();
+      set({
+        ready: true,
+        fs: initialFs,
+        tabs: [INITIAL_TAB],
+        activeTabId: INITIAL_TAB.id,
+        expandedDirs: [initialFs.rootPath],
+        children: seedChildren(initialFs),
+        status: "Could not restore previous workspace — using scratchpad",
+        workspaceError: err instanceof Error ? err.message : "Failed to restore session",
+        terminalCwd: initialFs.rootPath,
+      });
+>>>>>>> 8d2362a (fix network path crash issue)
     }
   },
 

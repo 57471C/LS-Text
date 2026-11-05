@@ -245,6 +245,7 @@ export function FileTree() {
         ))}
         {children.length === 0 && workspaceError && (
           <div className="px-3 py-6 text-xs text-subtle">
+<<<<<<< HEAD
             <p>Folder unavailable.</p>
             <p className="mt-1 break-all text-fg">{root}</p>
             <p className="mt-2">The network drive may not be connected yet.</p>
@@ -255,6 +256,35 @@ export function FileTree() {
             >
               Retry
             </button>
+=======
+            <p className="font-medium text-fg">Folder unavailable</p>
+            <p className="mt-1 break-all text-fg">{root}</p>
+            <p className="mt-2">{workspaceError}</p>
+            <p className="mt-1">The network drive may not be connected, or the path is no longer valid.</p>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                className="rounded-sm border border-border px-2 py-1 text-left text-fg hover:bg-elevated"
+                onClick={() => void useIde.getState().refreshDir(root)}
+              >
+                Retry
+              </button>
+              <button
+                type="button"
+                className="rounded-sm border border-border px-2 py-1 text-left text-fg hover:bg-elevated"
+                onClick={() => void useIde.getState().openFolder()}
+              >
+                Open different folder
+              </button>
+              <button
+                type="button"
+                className="rounded-sm border border-border px-2 py-1 text-left text-fg hover:bg-elevated"
+                onClick={() => void useIde.getState().resetWorkspace()}
+              >
+                Reset to scratchpad
+              </button>
+            </div>
+>>>>>>> 8d2362a (fix network path crash issue)
           </div>
         )}
         {children.length === 0 && !workspaceError && (
