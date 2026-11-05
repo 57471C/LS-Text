@@ -107,6 +107,7 @@ export interface IdeStore {
   terminalCwd: string;
   terminalNotice: string | null;
   status: string;
+  workspaceError: string | null;
 
   hydrate: () => Promise<void>;
   openLaunchFiles: () => Promise<void>;
@@ -197,6 +198,7 @@ export const useIde = create<IdeStore>((set, get) => {
   terminalCwd: initialFs.rootPath,
   terminalNotice: null,
   status: "Scratchpad workspace",
+  workspaceError: null,
 
   hydrate: async () => {
     const dump = await loadSession();
@@ -259,6 +261,16 @@ export const useIde = create<IdeStore>((set, get) => {
     });
     if (fs.kind === "native") {
       void get().refreshDir(fs.rootPath);
+      const root = fs.rootPath;
+      const retry = (delay: number) => {
+        window.setTimeout(() => {
+          const s = get();
+          if (s.fs.rootPath !== root || !s.workspaceError) return;
+          void s.refreshDir(root);
+        }, delay);
+      };
+      retry(3000);
+      retry(10000);
     }
   },
 
@@ -682,8 +694,19 @@ export const useIde = create<IdeStore>((set, get) => {
   expandDir: async (path) => {
     const s = get();
     if (!s.children[path]) {
-      const entries = await s.fs.list(path);
-      set({ children: { ...get().children, [path]: entries } });
+      try {
+        const entries = await s.fs.list(path);
+        set({
+          children: { ...get().children, [path]: entries },
+          workspaceError: get().fs.rootPath === path ? null : get().workspaceError,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (get().fs.rootPath === path) {
+          set({ workspaceError: message, status: `Folder unavailable: ${path}` });
+        }
+        return;
+      }
     }
     if (!get().expandedDirs.includes(path)) {
       set({ expandedDirs: [...get().expandedDirs, path] });
@@ -712,6 +735,7 @@ export const useIde = create<IdeStore>((set, get) => {
           expandedDirs: [native.rootPath],
           terminalCwd: native.rootPath,
           status: `Opened ${native.name}`,
+          workspaceError: null,
         });
         await get().refreshDir(native.rootPath);
         schedulePersist(get);
@@ -836,11 +860,17 @@ export const useIde = create<IdeStore>((set, get) => {
   },
 
   refreshDir: async (path) => {
+    const under = (dir: string, root: string) =>
+      dir !== root && (dir.startsWith(root + "/") || dir.startsWith(root + "\\"));
     try {
       const entries = await get().fs.list(path);
-      set({ children: { ...get().children, [path]: entries } });
+      set({
+        children: { ...get().children, [path]: entries },
+        workspaceError: get().fs.rootPath === path ? null : get().workspaceError,
+        status: get().fs.rootPath === path ? get().fs.name : get().status,
+      });
       for (const dir of get().expandedDirs) {
-        if (dir !== path && dir.startsWith(path + "/")) {
+        if (under(dir, path)) {
           try {
             const child = await get().fs.list(dir);
             set({ children: { ...get().children, [dir]: child } });
@@ -849,8 +879,14 @@ export const useIde = create<IdeStore>((set, get) => {
           }
         }
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (get().fs.rootPath === path) {
+        set({
+          workspaceError: message,
+          status: `Folder unavailable: ${path}`,
+        });
+      }
     }
   },
 
